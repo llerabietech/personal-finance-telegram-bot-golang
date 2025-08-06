@@ -1,10 +1,12 @@
 package bot
 
 import (
+	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"personal-finance/commands"
 	"personal-finance/state"
 	"strconv"
+	"strings"
 )
 
 func StartBot(bot *tgbotapi.BotAPI) {
@@ -50,18 +52,47 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		return
 
 	case state.AwaitingLimitUpdate:
+		// Пользователь вводит название категории
+		categoryName := strings.TrimSpace(text)
+		if categoryName == "" {
+			msg.Text = "Имя не может быть пустым. Попробуйте снова:"
+			bot.Send(msg)
+			return
+		}
+
+		// Сохраняем название категории
+		state.SetTempData(chatID, categoryName)
+		state.SetState(chatID, state.AwaitingNewLimitValue)
+
+		msg.Text = fmt.Sprintf("Введите новый лимит для категории *%s*:", strings.Title(categoryName))
+		msg.ParseMode = "Markdown"
+		bot.Send(msg)
+		return
+
+	case state.AwaitingNewLimitValue:
+		// Пользователь вводит лимит
 		amount, err := strconv.ParseFloat(text, 64)
 		if err != nil || amount <= 0 {
 			msg.Text = "Введите корректное положительное число."
 			bot.Send(msg)
 			return
 		}
-		categoryName, _ := state.GetTempData(chatID)
+
+		// Получаем сохранённое имя категории
+		categoryName, err := state.GetTempData(chatID)
+		if err != nil {
+			msg.Text = "❌ Сессия устарела. Начните заново."
+			state.Clear(chatID)
+			bot.Send(msg)
+			return
+		}
+
+		// Выполняем обновление
 		msg.Text = commands.UpdateLimit(chatID, categoryName, amount)
-		state.Clear(chatID)
+		state.Clear(chatID) // сброс состояния
 		bot.Send(msg)
 		return
-		
+
 	case state.AwaitingCategoryToDelete:
 		msg.Text = commands.HandleDeleteCategory(chatID, text)
 		bot.Send(msg)

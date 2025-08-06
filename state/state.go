@@ -13,7 +13,8 @@ const (
 	AwaitingCategoryName     UserState = "awaiting_category_name"
 	AwaitingCategoryLimit    UserState = "awaiting_category_limit"
 	AwaitingLimitUpdate      UserState = "awaiting_limit_update"
-	AwaitingCategoryToDelete UserState = "awaiting_category_to_delete" // ✅
+	AwaitingNewLimitValue    UserState = "awaiting_new_limit_value"
+	AwaitingCategoryToDelete UserState = "awaiting_category_to_delete"
 	ConfirmDeleteCategory    UserState = "confirm_delete_category"
 )
 

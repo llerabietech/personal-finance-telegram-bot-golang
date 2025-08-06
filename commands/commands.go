@@ -207,18 +207,39 @@ func CreateCategory(chatID int64, name string, limit float64) string {
 }
 
 func UpdateLimit(chatID int64, categoryName string, newLimit float64) string {
-	result, err := db.DB.Exec("UPDATE categories SET limit_sum = ? WHERE user_id = ? AND LOWER(name) = ?",
-		newLimit, chatID, strings.ToLower(categoryName))
-	if err != nil {
-		return "❌ Ошибка при обновлении лимита."
-	}
+    // Чистим ввод
+    name := strings.ToLower(strings.TrimSpace(categoryName))
+    if name == "" {
+        return "❌ Название категории не может быть пустым."
+    }
 
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		return "❌ Категория не найдена."
-	}
+    // Проверяем, существует ли категория у пользователя
+    var categoryID int
+    var currentLimit float64
 
-	return fmt.Sprintf("✅ Лимит для '%s' обновлён: %.2f ₽", strings.Title(categoryName), newLimit)
+    err := db.DB.QueryRow(`
+        SELECT id, limit_sum 
+        FROM categories 
+        WHERE user_id = ? AND LOWER(name) = ?`, 
+        chatID, name).Scan(&categoryID, &currentLimit)
+
+    if err == sql.ErrNoRows {
+        return fmt.Sprintf("❌ Категория '%s' не найдена. Проверьте список командой /categories.", strings.Title(name))
+    } else if err != nil {
+        return "❌ Ошибка при поиске категории: " + err.Error()
+    }
+
+    // Обновляем лимит
+    _, err = db.DB.Exec("UPDATE categories SET limit_sum = ? WHERE id = ?", newLimit, categoryID)
+    if err != nil {
+        return "❌ Ошибка при обновлении лимита."
+    }
+
+    return fmt.Sprintf(
+        "✅ Лимит для категории *%s* обновлён:\n"+
+        "Было: %.2f ₽ → Стало: %.2f ₽",
+        strings.Title(name), currentLimit, newLimit,
+    )
 }
 
 func HandleNewCategoryName(chatID int64, text string) string {
