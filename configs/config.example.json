@@ -1,3 +1,4 @@
 {
- "TelegramBotToken": "токен-полученный-от-BotFather"
+ "TelegramBotToken": "токен-полученный-от-BotFather",
+ "RedisPassword": ""
 }

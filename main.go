@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	TelegramBotToken string
+	RedisPassword string
 }
 
 func main() {
@@ -22,5 +23,7 @@ func main() {
 	}
 
 	db.InitDB()
+	db.InitRedis(configuration.RedisPassword)
+	
 	bot.StartBot(configuration.TelegramBotToken)
 }
