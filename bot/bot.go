@@ -2,21 +2,12 @@ package bot
 
 import (
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"log"
 	"personal-finance/commands"
 	"personal-finance/state"
 	"strconv"
 )
 
-func StartBot(token string) {
-	bot, err := tgbotapi.NewBotAPI(token)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	bot.Debug = true
-	log.Printf("Authorized on account %s", bot.Self.UserName)
-
+func StartBot(bot *tgbotapi.BotAPI) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 

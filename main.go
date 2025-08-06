@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"personal-finance/bot"
 	"personal-finance/db"
+	"personal-finance/bot"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Config struct {
@@ -25,5 +26,13 @@ func main() {
 	db.InitDB()
 	db.InitRedis(configuration.RedisPassword)
 	
-	bot.StartBot(configuration.TelegramBotToken)
+	botApi, err := tgbotapi.NewBotAPI(configuration.TelegramBotToken)
+	if err != nil {
+		log.Panic(err)
+	}
+	botApi.Debug = false
+	log.Printf("Authorized on account %s", botApi.Self.UserName)
+
+	bot.StartScheduler(botApi)
+	bot.StartBot(botApi)
 }

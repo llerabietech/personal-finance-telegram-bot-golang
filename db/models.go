@@ -4,6 +4,10 @@ type User struct {
 	ID int64
 }
 
+type UserSummary struct {
+    ChatID int64
+}
+
 type Category struct {
 	ID       int
 	Name     string

@@ -43,3 +43,21 @@ func createTables() {
 		panic(err)
 	}
 }
+
+func GetAllUsers() ([]int64, error) {
+    rows, err := DB.Query("SELECT DISTINCT user_id FROM expenses WHERE date >= date('now', '-3 month')")
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var users []int64
+    for rows.Next() {
+        var chatID int64
+        if err := rows.Scan(&chatID); err != nil {
+            continue
+        }
+        users = append(users, chatID)
+    }
+    return users, nil
+}
