@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"math"
 	"personal-finance/db"
 	"personal-finance/state"
 	"strconv"
@@ -49,29 +50,43 @@ func AddCategory(chatID int64, input string) string {
 	return fmt.Sprintf("✅ Категория '%s' добавлена с лимитом %.2f ₽", name, limit)
 }
 
-func AddExpense(chatID int64, input string) string {
+func AddExpense(bot *tgbotapi.BotAPI, chatID int64, input string) string {
 	parts := strings.Fields(input)
+	if len(parts) != 2 {
+		return "❌ Неверный формат. Используйте: категория сумма (например: еда 500)"
+	}
+
 	categoryInput := strings.ToLower(strings.TrimSpace(parts[0]))
-	var amount float64
-	fmt.Sscanf(parts[1], "%f", &amount)
+	amount, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil {
+		return "❌ Сумма должна быть числом."
+	}
 
 	var categoryID int
-	err := db.DB.QueryRow("SELECT id FROM categories WHERE user_id = ? AND LOWER(name) = ?",
-		chatID, categoryInput).Scan(&categoryID)
+	var categoryName string
+	err = db.DB.QueryRow(`
+        SELECT id, name 
+        FROM categories 
+        WHERE user_id = ? AND LOWER(name) = ?`,
+		chatID, categoryInput).Scan(&categoryID, &categoryName)
 
 	if err == sql.ErrNoRows {
-		return "❌ Категория не найдена. Проверьте название или добавьте новую."
+		return fmt.Sprintf("❌ Категория '%s' не найдена.", strings.Title(categoryInput))
 	} else if err != nil {
 		return "❌ Ошибка при поиске категории."
 	}
 
+	// Добавляем трату
 	_, err = db.DB.Exec("INSERT INTO expenses (user_id, category_id, amount, date) VALUES (?, ?, ?, ?)",
 		chatID, categoryID, amount, time.Now().Format("2006-01-02"))
 	if err != nil {
 		return "❌ Ошибка при сохранении траты."
 	}
 
-	return fmt.Sprintf("✅ Трата добавлена: %s — %.2f ₽", strings.Title(categoryInput), amount)
+	// ✅ Проверяем лимит и отправляем уведомление
+	go CheckLimitAndNotify(bot, chatID, categoryID, categoryName)
+
+	return fmt.Sprintf("✅ Трата добавлена: %s — %.2f ₽", strings.Title(categoryName), amount)
 }
 
 func ListCategories(chatID int64) string {
@@ -224,4 +239,51 @@ func HandleNewCategoryName(chatID int64, text string) string {
 	state.SetState(chatID, state.AwaitingCategoryLimit)
 
 	return fmt.Sprintf("Категория: %s. Установите лимит:", strings.Title(name))
+}
+
+func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, categoryName string) {
+	month := time.Now().Format("2006-01")
+
+	// Получаем сумму трат за месяц по категории
+	var spent float64
+	err := db.DB.QueryRow(`
+        SELECT COALESCE(SUM(amount), 0)
+        FROM expenses
+        WHERE user_id = ? AND category_id = ? AND date LIKE ?`,
+		chatID, categoryID, month+"%").Scan(&spent)
+	if err != nil {
+		return
+	}
+
+	// Получаем лимит
+	var limitSum float64
+	err = db.DB.QueryRow("SELECT limit_sum FROM categories WHERE id = ? AND user_id = ?",
+		categoryID, chatID).Scan(&limitSum)
+	if err != nil || limitSum <= 0 {
+		return
+	}
+
+	percent := (spent / limitSum) * 100
+
+	var msgText string
+	sent := false
+
+	if percent >= 100 {
+		msgText = fmt.Sprintf("❌ Лимит по категории *%s* превышен!\n"+
+			"Потрачено: %.2f ₽ (лимит: %.2f ₽)",
+			strings.Title(categoryName), spent, limitSum)
+		sent = true
+	} else if percent >= 80 {
+		msgText = fmt.Sprintf("⚠️ Внимание! Вы потратили *%.0f%%* лимита на *%s*.\n"+
+			"Потрачено: %.2f ₽ из %.2f ₽",
+			math.Round(percent), strings.Title(categoryName), spent, limitSum)
+		sent = true
+	}
+
+	// Отправляем уведомление, если нужно
+	if sent {
+		msg := tgbotapi.NewMessage(chatID, msgText)
+		msg.ParseMode = "Markdown"
+		bot.Send(msg)
+	}
 }

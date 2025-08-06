@@ -101,7 +101,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 	default:
 		if commands.IsPotentialExpense(chatID, text) {
-			msg.Text = commands.AddExpense(chatID, text)
+			msg.Text = commands.AddExpense(bot, chatID, text)
 		} else {
 			msg.Text = "Неизвестная команда. Используйте меню."
 		}
