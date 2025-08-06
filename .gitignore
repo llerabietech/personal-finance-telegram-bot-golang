@@ -4,3 +4,5 @@
 
 configs/*
 !configs/config.example.json
+
+finance.db

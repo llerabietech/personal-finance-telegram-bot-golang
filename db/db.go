@@ -1,24 +1,24 @@
 package db
 
 import (
-    "database/sql"
-    _ "github.com/mattn/go-sqlite3"
+	"database/sql"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sql.DB
 
 func InitDB() {
-    var err error
-    DB, err = sql.Open("sqlite3", "./finance.db")
-    if err != nil {
-        panic(err)
-    }
+	var err error
+	DB, err = sql.Open("sqlite3", "./finance.db")
+	if err != nil {
+		panic(err)
+	}
 
-    createTables()
+	createTables()
 }
 
 func createTables() {
-    query := `
+	query := `
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY
     );
@@ -37,9 +37,9 @@ func createTables() {
         date TEXT,
         FOREIGN KEY(category_id) REFERENCES categories(id)
     );`
-    
-    _, err := DB.Exec(query)
-    if err != nil {
-        panic(err)
-    }
+
+	_, err := DB.Exec(query)
+	if err != nil {
+		panic(err)
+	}
 }
