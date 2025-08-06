@@ -2,17 +2,19 @@ package state
 
 import (
 	"personal-finance/db"
-	"time"
 	"strconv"
+	"time"
 )
 
 type UserState string
 
 const (
-	Idle                  UserState = "idle"
-	AwaitingCategoryName  UserState = "awaiting_category_name"
-	AwaitingCategoryLimit UserState = "awaiting_category_limit"
-	AwaitingLimitUpdate   UserState = "awaiting_limit_update"
+	Idle                     UserState = "idle"
+	AwaitingCategoryName     UserState = "awaiting_category_name"
+	AwaitingCategoryLimit    UserState = "awaiting_category_limit"
+	AwaitingLimitUpdate      UserState = "awaiting_limit_update"
+	AwaitingCategoryToDelete UserState = "awaiting_category_to_delete" // ✅
+	ConfirmDeleteCategory    UserState = "confirm_delete_category"
 )
 
 const StateTTL = 5 * time.Minute // Время жизни состояния (защита от "зависаний")
@@ -53,9 +55,9 @@ func Clear(chatID int64) {
 
 // Вспомогательные функции для ключей
 func stateKey(chatID int64) string {
-    return "user:state:" + strconv.FormatInt(chatID, 10)
+	return "user:state:" + strconv.FormatInt(chatID, 10)
 }
 
 func tempKey(chatID int64) string {
-    return "user:temp:" + strconv.FormatInt(chatID, 10)
+	return "user:temp:" + strconv.FormatInt(chatID, 10)
 }

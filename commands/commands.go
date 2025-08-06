@@ -26,6 +26,9 @@ func GetMainKeyboard() tgbotapi.ReplyKeyboardMarkup {
 			tgbotapi.NewKeyboardButton("📊 Аналитика"),
 			tgbotapi.NewKeyboardButton("💸 Изменить лимит"),
 		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("🗑 Удалить категорию"),
+		),
 	)
 }
 
@@ -286,4 +289,75 @@ func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, cat
 		msg.ParseMode = "Markdown"
 		bot.Send(msg)
 	}
+}
+
+// HandleDeleteCategory — обработка ввода названия категории
+func HandleDeleteCategory(chatID int64, categoryName string) string {
+    name := strings.ToLower(strings.TrimSpace(categoryName))
+
+    var categoryID int
+    var limit float64
+    err := db.DB.QueryRow("SELECT id, limit_sum FROM categories WHERE user_id = ? AND LOWER(name) = ?", 
+        chatID, name).Scan(&categoryID, &limit)
+
+    if err == sql.ErrNoRows {
+        return "❌ Категория не найдена."
+    } else if err != nil {
+        return "❌ Ошибка при поиске категории."
+    }
+
+    // Сохраняем ID во временное хранилище
+    state.SetTempData(chatID, fmt.Sprintf("%d", categoryID))
+    state.SetState(chatID, state.ConfirmDeleteCategory)
+
+    displayName := strings.Title(name)
+    return fmt.Sprintf(
+        "⚠️ Вы уверены, что хотите удалить категорию *%s* (лимит: %.2f ₽)?\n"+
+        "Все траты по ней будут безвозвратно удалены.\n"+
+        "Напишите *да* для подтверждения, или любое другое сообщение для отмены.",
+        displayName, limit,
+    )
+}
+
+// ConfirmDelete — подтверждение удаления
+func ConfirmDelete(chatID int64, answer string) string {
+    categoryIDStr, err := state.GetTempData(chatID)
+    if err != nil {
+        state.Clear(chatID)
+        return "❌ Данные устарели. Начните заново."
+    }
+
+    if strings.ToLower(answer) != "да" && strings.ToLower(answer) != "yes" {
+        state.Clear(chatID)
+        return "✅ Удаление отменено."
+    }
+
+    var categoryID int
+    fmt.Sscanf(categoryIDStr, "%d", &categoryID)
+
+    // Удаляем траты и категорию
+    tx, err := db.DB.Begin()
+    if err != nil {
+        return "❌ Ошибка при удалении."
+    }
+
+    _, err = tx.Exec("DELETE FROM expenses WHERE category_id = ?", categoryID)
+    if err != nil {
+        tx.Rollback()
+        return "❌ Ошибка при удалении трат."
+    }
+
+    _, err = tx.Exec("DELETE FROM categories WHERE id = ?", categoryID)
+    if err != nil {
+        tx.Rollback()
+        return "❌ Ошибка при удалении категории."
+    }
+
+    err = tx.Commit()
+    if err != nil {
+        return "❌ Ошибка подтверждения изменений."
+    }
+
+    state.Clear(chatID)
+    return "✅ Категория и все траты по ней успешно удалены."
 }

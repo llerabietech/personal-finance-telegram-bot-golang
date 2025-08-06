@@ -61,6 +61,16 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		state.Clear(chatID)
 		bot.Send(msg)
 		return
+		
+	case state.AwaitingCategoryToDelete:
+		msg.Text = commands.HandleDeleteCategory(chatID, text)
+		bot.Send(msg)
+		return
+
+	case state.ConfirmDeleteCategory:
+		msg.Text = commands.ConfirmDelete(chatID, text)
+		bot.Send(msg)
+		return
 	}
 
 	// Обычные команды
@@ -89,6 +99,10 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	case text == "💸 Изменить лимит":
 		msg.Text = "Введите название категории:"
 		state.SetState(chatID, state.AwaitingLimitUpdate)
+
+	case text == "🗑 Удалить категорию":
+		msg.Text = "Введите название категории, которую хотите удалить:"
+		state.SetState(chatID, state.AwaitingCategoryToDelete)
 
 	default:
 		if commands.IsPotentialExpense(chatID, text) {
