@@ -31,7 +31,7 @@ func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 	}
 
 	// После отправки всех отчётов — чистим старые траты
-    CleanupOldExpenses()
+	CleanupOldExpenses()
 }
 
 // generateReportForUser — генерирует отчёт для одного пользователя
@@ -49,6 +49,10 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 		return ""
 	}
 	defer rows.Close()
+
+	var totalIncome float64
+	db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM incomes WHERE user_id = ? AND date LIKE ?",
+		chatID, monthStr+"%").Scan(&totalIncome)
 
 	var lines []string
 	var totalSpent float64
@@ -74,39 +78,35 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 	}
 
 	monthName := month.Format("January")
+	balance := totalIncome - totalSpent
 	emoji := "🟢"
-	if overLimit > 0 {
-		emoji = "🟡"
-	}
-	if overLimit > 2 {
+	if balance < 0 {
 		emoji = "🔴"
+	} else if balance < totalIncome*0.1 {
+		emoji = "🟡"
 	}
 
 	return fmt.Sprintf(`%s **Месячный отчёт за %s** %s
 
-💸 *Общие траты*: %.2f ₽
+💼 *Доходы*: %.2f ₽
+💸 *Расходы*: %.2f ₽
+📊 *Баланс*: %.2f ₽
 
-📊 *По категориям*:
-%s
-
-📌 *Превышено лимитов*: %d шт.
-
-Спасибо, что используете финансового помощника! 💼`,
-		emoji, strings.Title(strings.ToLower(monthName)), emoji, totalSpent,
-		strings.Join(lines, "\n"), overLimit)
+...
+`, emoji, monthName, emoji, totalIncome, totalSpent, balance)
 }
 
-//удаляет траты старше 3 месяцев
+// удаляет траты старше 3 месяцев
 func CleanupOldExpenses() {
-    // Определяем дату: всё, что раньше 3 месяцев — удаляем
-    threeMonthsAgo := time.Now().AddDate(0, -3, 0).Format("2006-01-02")
+	// Определяем дату: всё, что раньше 3 месяцев — удаляем
+	threeMonthsAgo := time.Now().AddDate(0, -3, 0).Format("2006-01-02")
 
-    result, err := db.DB.Exec("DELETE FROM expenses WHERE date < ?", threeMonthsAgo)
-    if err != nil {
-        println("Ошибка при удалении старых трат:", err.Error())
-        return
-    }
+	result, err := db.DB.Exec("DELETE FROM expenses WHERE date < ?", threeMonthsAgo)
+	if err != nil {
+		println("Ошибка при удалении старых трат:", err.Error())
+		return
+	}
 
-    rows, _ := result.RowsAffected()
-    println("Очистка: удалено", rows, "старых трат (до", threeMonthsAgo + ")")
+	rows, _ := result.RowsAffected()
+	println("Очистка: удалено", rows, "старых трат (до", threeMonthsAgo+")")
 }

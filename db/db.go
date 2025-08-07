@@ -36,6 +36,13 @@ func createTables() {
         amount REAL,
         date TEXT,
         FOREIGN KEY(category_id) REFERENCES categories(id)
+    );
+    CREATE TABLE IF NOT EXISTS incomes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        source TEXT,
+        amount REAL,
+        date TEXT
     );`
 
 	_, err := DB.Exec(query)

@@ -22,3 +22,11 @@ type Expense struct {
 	Amount     float64
 	Date       string // YYYY-MM-DD
 }
+
+type Income struct {
+    ID       int
+    UserID   int64
+    Source   string
+    Amount   float64
+    Date     string  // YYYY-MM-DD
+}

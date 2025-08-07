@@ -117,6 +117,9 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	case text == "➕ Трата":
 		msg.Text = "Введите: категория сумма (например: еда 500)"
 
+	case text == "💵 Доход":
+		msg.Text = "Введите: источник сумма (например: зарплата 100000)"
+
 	case text == "⚙️ Категории":
 		msg.Text = commands.ListCategories(chatID)
 
@@ -138,10 +141,21 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	default:
 		if commands.IsPotentialExpense(chatID, text) {
 			msg.Text = commands.AddExpense(bot, chatID, text)
+		} else if isPotentialIncome(text) {
+			msg.Text = commands.AddIncome(chatID, text)
 		} else {
 			msg.Text = "Неизвестная команда. Используйте меню."
 		}
 	}
 
 	bot.Send(msg)
+}
+
+func isPotentialIncome(text string) bool {
+    parts := strings.Fields(text)
+    if len(parts) != 2 {
+        return false
+    }
+    _, err := strconv.ParseFloat(parts[1], 64)
+    return err == nil
 }
