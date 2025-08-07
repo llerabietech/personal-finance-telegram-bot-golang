@@ -1,0 +1,8 @@
+/.vscode
+.DS_Store
+.idea/
+
+configs/*
+!configs/config.example.json
+
+finance.db
