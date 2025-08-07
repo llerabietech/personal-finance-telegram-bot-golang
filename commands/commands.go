@@ -6,88 +6,95 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"math"
 	"personal-finance/db"
+	"personal-finance/i18n"
 	"personal-finance/state"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func GetMainMenu() tgbotapi.ReplyKeyboardMarkup {
+func GetLanguageKeyboard() tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("➕ Трата"),
-			tgbotapi.NewKeyboardButton("💵 Доход"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("⚙️ Категории"),
-			tgbotapi.NewKeyboardButton("🎯 Лимиты"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("📊 Аналитика"),
+			tgbotapi.NewKeyboardButton("🇷🇺 Русский"),
+			tgbotapi.NewKeyboardButton("🇬🇧 English"),
 		),
 	)
 }
 
-func GetCategoriesMenu() tgbotapi.ReplyKeyboardMarkup {
+func GetMainMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("📋 Список категорий"),
+			tgbotapi.NewKeyboardButton(i18n.T("expenses", lang)),
+			tgbotapi.NewKeyboardButton(i18n.T("income", lang)),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("➕ Добавить категорию"),
-			tgbotapi.NewKeyboardButton("🗑 Удалить категорию"),
+			tgbotapi.NewKeyboardButton(i18n.T("categories", lang)),
+			tgbotapi.NewKeyboardButton(i18n.T("limits", lang)),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("⬅️ Назад"),
+			tgbotapi.NewKeyboardButton(i18n.T("analytics", lang)),
 		),
 	)
 }
 
-func GetLimitsMenu() tgbotapi.ReplyKeyboardMarkup {
+func GetCategoriesMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("🎯 Лимиты по категориям"),
+			tgbotapi.NewKeyboardButton(i18n.T("list_categories", lang)),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("💸 Изменить лимит"),
+			tgbotapi.NewKeyboardButton(i18n.T("add_category", lang)),
+			tgbotapi.NewKeyboardButton(i18n.T("delete_category", lang)),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("⬅️ Назад"),
+			tgbotapi.NewKeyboardButton(i18n.T("back", lang)),
 		),
 	)
 }
 
-func AddCategory(chatID int64, input string) string {
+func GetLimitsMenu(lang string) tgbotapi.ReplyKeyboardMarkup {
+	return tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(i18n.T("limits_list", lang)),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(i18n.T("change_limit", lang)),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton(i18n.T("back", lang)),
+		),
+	)
+}
+
+func AddCategory(chatID int64, input string, lang string) string {
 	parts := strings.Fields(input)
-	if len(parts) != 3 {
-		return "Используйте: /addcategory имя_категории лимит (например: /addcategory еда 3000)"
-	}
 
 	name := strings.ToLower(parts[1])
 	limit, err := strconv.ParseFloat(parts[2], 64)
 	if err != nil || limit <= 0 {
-		return "Лимит должен быть положительным числом."
+		return i18n.T("correct_digit", lang)
 	}
 
 	_, err = db.DB.Exec("INSERT INTO categories (name, user_id, limit_sum) VALUES (?, ?, ?)",
 		name, chatID, limit)
 	if err != nil {
-		return "Ошибка при добавлении категории."
+		return i18n.T("error_add_category", lang)
 	}
 
-	return fmt.Sprintf("✅ Категория '%s' добавлена с лимитом %.2f ₽", name, limit)
+	return i18n.Tf("category_created", lang, name, limit)
 }
 
-func AddExpense(bot *tgbotapi.BotAPI, chatID int64, input string) string {
+func AddExpense(bot *tgbotapi.BotAPI, chatID int64, input string, lang string) string {
 	parts := strings.Fields(input)
 	if len(parts) != 2 {
-		return "❌ Неверный формат. Используйте: категория сумма (например: еда 500)"
+		return i18n.T("invalid_format_expense", lang)
 	}
 
 	categoryInput := strings.ToLower(strings.TrimSpace(parts[0]))
 	amount, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
-		return "❌ Сумма должна быть числом."
+		return i18n.T("invalid_amount", lang)
 	}
 
 	var categoryID int
@@ -99,28 +106,28 @@ func AddExpense(bot *tgbotapi.BotAPI, chatID int64, input string) string {
 		chatID, categoryInput).Scan(&categoryID, &categoryName)
 
 	if err == sql.ErrNoRows {
-		return fmt.Sprintf("❌ Категория '%s' не найдена.", strings.Title(categoryInput))
+		return i18n.Tf("category_not_found", lang, categoryInput)
 	} else if err != nil {
-		return "❌ Ошибка при поиске категории."
+		return i18n.T("error_found_category", lang)
 	}
 
 	// Добавляем трату
 	_, err = db.DB.Exec("INSERT INTO expenses (user_id, category_id, amount, date) VALUES (?, ?, ?, ?)",
 		chatID, categoryID, amount, time.Now().Format("2006-01-02"))
 	if err != nil {
-		return "❌ Ошибка при сохранении траты."
+		return i18n.T("error_save_expense", lang)
 	}
 
 	// ✅ Проверяем лимит и отправляем уведомление
-	go CheckLimitAndNotify(bot, chatID, categoryID, categoryName)
+	go CheckLimitAndNotify(bot, chatID, categoryID, categoryName, lang)
 
-	return fmt.Sprintf("✅ Трата добавлена: %s — %.2f ₽", strings.Title(categoryName), amount)
+	return i18n.Tf("category_not_found", lang, strings.Title(categoryName), amount)
 }
 
-func ListCategories(chatID int64) string {
+func ListCategories(chatID int64, lang string) string {
 	rows, err := db.DB.Query("SELECT name FROM categories WHERE user_id = ?", chatID)
 	if err != nil {
-		return "Ошибка загрузки категорий."
+		return i18n.T("error_load_category", lang)
 	}
 	defer rows.Close()
 
@@ -132,15 +139,15 @@ func ListCategories(chatID int64) string {
 	}
 
 	if len(categories) == 0 {
-		return "Категории отсутствуют. Добавьте командой /addcategory имя_ категории лимит"
+		return i18n.T("error_empty_category", lang)
 	}
-	return "Категории:\n• " + strings.Join(categories, "\n• ")
+	return i18n.T("categories2", lang) + strings.Join(categories, "\n• ")
 }
 
-func ListLimits(chatID int64) string {
+func ListLimits(chatID int64, lang string) string {
 	rows, err := db.DB.Query("SELECT name, limit_sum FROM categories WHERE user_id = ?", chatID)
 	if err != nil {
-		return "Ошибка загрузки лимитов."
+		return i18n.T("error_load_limits", lang)
 	}
 	defer rows.Close()
 
@@ -152,13 +159,13 @@ func ListLimits(chatID int64) string {
 		result = append(result, fmt.Sprintf("%s: %.2f ₽", name, limit))
 	}
 
-	return "Лимиты:\n" + strings.Join(result, "\n")
+	return i18n.T("limits2", lang) + strings.Join(result, "\n")
 }
 
-func GetAnalytics(chatID int64) string {
+func GetAnalytics(chatID int64, lang string) string {
 	month := time.Now().Format("2006-01")
 
-	// 🔹 Сумма доходов
+	// Сумма доходов
 	var totalIncome float64
 	err := db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM incomes WHERE user_id = ? AND date LIKE ?",
 		chatID, month+"%").Scan(&totalIncome)
@@ -166,7 +173,7 @@ func GetAnalytics(chatID int64) string {
 		totalIncome = 0
 	}
 
-	// 🔹 Сумма расходов
+	// Сумма расходов
 	var totalExpenses float64
 	err = db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM expenses e JOIN categories c ON e.category_id = c.id WHERE e.user_id = ? AND e.date LIKE ?",
 		chatID, month+"%").Scan(&totalExpenses)
@@ -174,7 +181,7 @@ func GetAnalytics(chatID int64) string {
 		totalExpenses = 0
 	}
 
-	// 🔹 Расходы по категориям
+	// Расходы по категориям
 	rows, err := db.DB.Query(`
         SELECT c.name, SUM(e.amount), c.limit_sum 
         FROM expenses e
@@ -182,7 +189,7 @@ func GetAnalytics(chatID int64) string {
         WHERE e.user_id = ? AND e.date LIKE ?
         GROUP BY c.name, c.limit_sum`, chatID, month+"%")
 	if err != nil {
-		return "Ошибка загрузки данных."
+		return i18n.T("limits2", lang)
 	}
 	defer rows.Close()
 
@@ -198,7 +205,7 @@ func GetAnalytics(chatID int64) string {
 		report = append(report, fmt.Sprintf("• %s: %.2f ₽ / %.2f ₽ %s", name, spent, limit, status))
 	}
 
-	// 🔹 Формируем итог
+	// Формируем итог
 	balance := totalIncome - totalExpenses
 	balanceEmoji := "🟢"
 	if balance < 0 {
@@ -207,28 +214,15 @@ func GetAnalytics(chatID int64) string {
 		balanceEmoji = "🟡"
 	}
 
-	incomeStr := fmt.Sprintf("💼 *Доходы*: %.2f ₽", totalIncome)
-	expensesStr := fmt.Sprintf("💸 *Расходы*: %.2f ₽", totalExpenses)
-	balanceStr := fmt.Sprintf("📊 *Баланс*: %s %.2f ₽", balanceEmoji, balance)
-
 	details := "—"
 	if len(report) > 0 {
 		details = strings.Join(report, "\n")
 	}
 
-	return fmt.Sprintf(`📈 **Аналитика за %s**
-
-%s
-%s
-%s
-
-📋 *По категориям*:
-%s
-
-Спасибо, что управляете финансами с умом! 💼`,
-		monthName(month), incomeStr, expensesStr, balanceStr, details)
+	return i18n.Tf("analytics_title", lang, monthName(month), totalIncome, totalExpenses, balanceEmoji, balance, details)
 }
 
+// TODO add russian
 func monthName(monthStr string) string {
 	parts := strings.Split(monthStr, "-")
 	year, month := parts[0], parts[1]
@@ -267,20 +261,20 @@ func IsPotentialExpense(chatID int64, text string) bool {
 	return count > 0
 }
 
-func CreateCategory(chatID int64, name string, limit float64) string {
+func CreateCategory(chatID int64, name string, limit float64, lang string) string {
 	_, err := db.DB.Exec("INSERT INTO categories (name, user_id, limit_sum) VALUES (?, ?, ?)",
 		name, chatID, limit)
 	if err != nil {
-		return "❌ Ошибка при создании категории."
+		return i18n.T("error_create_category", lang)
 	}
-	return fmt.Sprintf("✅ Категория '%s' добавлена с лимитом %.2f ₽", strings.Title(name), limit)
+	return i18n.Tf("category_created", lang, strings.Title(name), limit)
 }
 
-func UpdateLimit(chatID int64, categoryName string, newLimit float64) string {
+func UpdateLimit(chatID int64, categoryName string, newLimit float64, lang string) string {
 	// Чистим ввод
 	name := strings.ToLower(strings.TrimSpace(categoryName))
 	if name == "" {
-		return "❌ Название категории не может быть пустым."
+		return i18n.T("error_category_name_is_empty", lang)
 	}
 
 	// Проверяем, существует ли категория у пользователя
@@ -294,48 +288,44 @@ func UpdateLimit(chatID int64, categoryName string, newLimit float64) string {
 		chatID, name).Scan(&categoryID, &currentLimit)
 
 	if err == sql.ErrNoRows {
-		return fmt.Sprintf("❌ Категория '%s' не найдена. Проверьте список командой /categories.", strings.Title(name))
+		return i18n.Tf("category_not_found", lang, strings.Title(name))
 	} else if err != nil {
-		return "❌ Ошибка при поиске категории: " + err.Error()
+		return i18n.T("error_found_category", lang) + err.Error()
 	}
 
 	// Обновляем лимит
 	_, err = db.DB.Exec("UPDATE categories SET limit_sum = ? WHERE id = ?", newLimit, categoryID)
 	if err != nil {
-		return "❌ Ошибка при обновлении лимита."
+		return i18n.T("error_update_limit", lang)
 	}
 
-	return fmt.Sprintf(
-		"✅ Лимит для категории *%s* обновлён:\n"+
-			"Было: %.2f ₽ → Стало: %.2f ₽",
-		strings.Title(name), currentLimit, newLimit,
-	)
+	return i18n.Tf("updated_limit", lang, currentLimit, newLimit)
 }
 
-func HandleNewCategoryName(chatID int64, text string) string {
+func HandleNewCategoryName(chatID int64, text string, lang string) string {
 	name := strings.ToLower(strings.TrimSpace(text))
 	if name == "" {
-		return "Имя не может быть пустым. Попробуйте снова:"
+		return i18n.T("empty_name", lang)
 	}
 
 	var count int
 	err := db.DB.QueryRow("SELECT COUNT(*) FROM categories WHERE user_id = ? AND LOWER(name) = ?", chatID, name).Scan(&count)
 	if err != nil {
-		return "Ошибка проверки."
+		return err.Error()
 	}
 	if count > 0 {
 		state.Clear(chatID)
-		return "Категория уже существует."
+		return i18n.T("error_category_already_exist", lang)
 	}
 
 	// Сохраняем во временное хранилище Redis
 	state.SetTempData(chatID, name)
 	state.SetState(chatID, state.AwaitingCategoryLimit)
 
-	return fmt.Sprintf("Категория: %s. Установите лимит:", strings.Title(name))
+	return i18n.Tf("error_category_already_exist", lang, strings.Title(name))
 }
 
-func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, categoryName string) {
+func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, categoryName string, lang string) {
 	month := time.Now().Format("2006-01")
 
 	// Получаем сумму трат за месяц по категории
@@ -363,14 +353,10 @@ func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, cat
 	sent := false
 
 	if percent >= 100 {
-		msgText = fmt.Sprintf("❌ Лимит по категории *%s* превышен!\n"+
-			"Потрачено: %.2f ₽ (лимит: %.2f ₽)",
-			strings.Title(categoryName), spent, limitSum)
+		msgText = i18n.Tf("limit_is_overloaded", lang, strings.Title(categoryName), spent, limitSum)
 		sent = true
 	} else if percent >= 80 {
-		msgText = fmt.Sprintf("⚠️ Внимание! Вы потратили *%.0f%%* лимита на *%s*.\n"+
-			"Потрачено: %.2f ₽ из %.2f ₽",
-			math.Round(percent), strings.Title(categoryName), spent, limitSum)
+		msgText = i18n.Tf("limit_warning", lang, math.Round(percent), strings.Title(categoryName), spent, limitSum)
 		sent = true
 	}
 
@@ -383,7 +369,7 @@ func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, cat
 }
 
 // HandleDeleteCategory — обработка ввода названия категории
-func HandleDeleteCategory(chatID int64, categoryName string) string {
+func HandleDeleteCategory(chatID int64, categoryName string, lang string) string {
 	name := strings.ToLower(strings.TrimSpace(categoryName))
 
 	var categoryID int
@@ -392,9 +378,9 @@ func HandleDeleteCategory(chatID int64, categoryName string) string {
 		chatID, name).Scan(&categoryID, &limit)
 
 	if err == sql.ErrNoRows {
-		return "❌ Категория не найдена."
+		return i18n.T("category_not_found2", lang)
 	} else if err != nil {
-		return "❌ Ошибка при поиске категории."
+		return i18n.T("error_found_category", lang)
 	}
 
 	// Сохраняем ID во временное хранилище
@@ -402,25 +388,20 @@ func HandleDeleteCategory(chatID int64, categoryName string) string {
 	state.SetState(chatID, state.ConfirmDeleteCategory)
 
 	displayName := strings.Title(name)
-	return fmt.Sprintf(
-		"⚠️ Вы уверены, что хотите удалить категорию *%s* (лимит: %.2f ₽)?\n"+
-			"Все траты по ней будут безвозвратно удалены.\n"+
-			"Напишите *да* для подтверждения, или любое другое сообщение для отмены.",
-		displayName, limit,
-	)
+	return i18n.Tf("confirm_delete", lang, displayName, limit)
 }
 
 // ConfirmDelete — подтверждение удаления
-func ConfirmDelete(chatID int64, answer string) string {
+func ConfirmDelete(chatID int64, answer string, lang string) string {
 	categoryIDStr, err := state.GetTempData(chatID)
 	if err != nil {
 		state.Clear(chatID)
-		return "❌ Данные устарели. Начните заново."
+		return i18n.T("error_old_data", lang)
 	}
 
 	if strings.ToLower(answer) != "да" && strings.ToLower(answer) != "yes" {
 		state.Clear(chatID)
-		return "✅ Удаление отменено."
+		return i18n.T("delete_cancelled", lang)
 	}
 
 	var categoryID int
@@ -429,47 +410,47 @@ func ConfirmDelete(chatID int64, answer string) string {
 	// Удаляем траты и категорию
 	tx, err := db.DB.Begin()
 	if err != nil {
-		return "❌ Ошибка при удалении."
+		return i18n.T("error_delete", lang)
 	}
 
 	_, err = tx.Exec("DELETE FROM expenses WHERE category_id = ?", categoryID)
 	if err != nil {
 		tx.Rollback()
-		return "❌ Ошибка при удалении трат."
+		return i18n.T("error_delete_expense", lang)
 	}
 
 	_, err = tx.Exec("DELETE FROM categories WHERE id = ?", categoryID)
 	if err != nil {
 		tx.Rollback()
-		return "❌ Ошибка при удалении категории."
+		return i18n.T("error_delete_category", lang)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return "❌ Ошибка подтверждения изменений."
+		return i18n.T("error_confirm_changes", lang)
 	}
 
 	state.Clear(chatID)
-	return "✅ Категория и все траты по ней успешно удалены."
+	return i18n.T("category_deleted", lang)
 }
 
-func AddIncome(chatID int64, input string) string {
+func AddIncome(chatID int64, input string, lang string) string {
 	parts := strings.Fields(input)
 	if len(parts) != 2 {
-		return "❌ Неверный формат. Используйте: источник сумма (например: зарплата 75000)"
+		return i18n.T("invalid_format2", lang)
 	}
 
 	source := strings.ToLower(strings.TrimSpace(parts[0]))
 	amount, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil || amount <= 0 {
-		return "❌ Сумма должна быть положительным числом."
+		return i18n.T("error_summ", lang)
 	}
 
 	_, err = db.DB.Exec("INSERT INTO incomes (user_id, source, amount, date) VALUES (?, ?, ?, ?)",
 		chatID, source, amount, time.Now().Format("2006-01-02"))
 	if err != nil {
-		return "❌ Ошибка при сохранении дохода."
+		return i18n.T("error_save_income", lang)
 	}
 
-	return fmt.Sprintf("✅ Доход добавлен: %s — %.2f ₽", strings.Title(source), amount)
+	return i18n.Tf("add_income", lang, strings.Title(source), amount)
 }

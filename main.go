@@ -2,17 +2,21 @@ package main
 
 import (
 	"encoding/json"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"log"
 	"os"
-	"personal-finance/db"
 	"personal-finance/bot"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"personal-finance/db"
 )
 
 type Config struct {
 	TelegramBotToken string
-	RedisPassword string
+	RedisPassword    string
 }
+
+var TitleCaser = cases.Title(language.Und)
 
 func main() {
 	file, _ := os.Open("configs/config.json")
@@ -25,7 +29,7 @@ func main() {
 
 	db.InitDB()
 	db.InitRedis(configuration.RedisPassword)
-	
+
 	botApi, err := tgbotapi.NewBotAPI(configuration.TelegramBotToken)
 	if err != nil {
 		log.Panic(err)

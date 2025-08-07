@@ -18,8 +18,8 @@ func InitRedis(password string) {
     // Проверка подключения
     _, err := RedisClient.Ping(Ctx).Result()
     if err != nil {
-        panic("Не удалось подключиться к Redis: " + err.Error())
+        panic("Couldn't connect to Redis: " + err.Error())
     }
 
-    println("✅ Подключено к Redis")
+    println("✅ Connected to Redis")
 }

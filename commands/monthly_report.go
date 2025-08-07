@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"personal-finance/db"
+	"personal-finance/i18n"
+	"personal-finance/state"
+	"personal-finance/utils"
 	"strings"
 	"time"
 )
@@ -11,13 +14,12 @@ import (
 // отправляет отчёт за предыдущий месяц всем пользователям
 func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 	now := time.Now()
-	// Предыдущий месяц: например, если сейчас 1 апреля — берём март
 	prevMonth := now.AddDate(0, -1, 0)
 	monthStr := prevMonth.Format("2006-01")
 
 	users, err := db.GetAllUsers()
 	if err != nil {
-		fmt.Println("Ошибка получения пользователей:", err)
+		fmt.Println("Error receiving users:", err)
 		return
 	}
 
@@ -30,12 +32,17 @@ func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 		}
 	}
 
-	// После отправки всех отчётов — чистим старые траты
 	CleanupOldExpenses()
 }
 
 // generateReportForUser — генерирует отчёт для одного пользователя
 func generateReportForUser(chatID int64, monthStr string, month time.Time) string {
+	// 🔹 Получаем язык пользователя
+	lang, err := state.GetUserLanguage(chatID)
+	if err != nil {
+		lang = "ru" // fallback
+	}
+
 	rows, err := db.DB.Query(`
         SELECT 
             c.name,
@@ -50,35 +57,36 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 	}
 	defer rows.Close()
 
-	var totalIncome float64
+	var lines []string
+	var totalSpent, totalIncome, balance float64
+	var overLimit int
+
+	// 🔹 Сумма доходов
 	db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM incomes WHERE user_id = ? AND date LIKE ?",
 		chatID, monthStr+"%").Scan(&totalIncome)
 
-	var lines []string
-	var totalSpent float64
-	var overLimit int
-
+	totalSpent = 0
 	for rows.Next() {
 		var name string
 		var spent, limit float64
 		rows.Scan(&name, &spent, &limit)
 		totalSpent += spent
 
-		status := "✅"
+		status := i18n.T("monthly_status_under", lang)
 		if spent > limit {
-			status = "❌"
+			status = i18n.T("monthly_status_over", lang)
 			overLimit++
 		}
 
-		lines = append(lines, fmt.Sprintf("- %s: %.2f ₽ / %.2f ₽ %s", strings.Title(name), spent, limit, status))
+		displayName := utils.Title.String(name)
+		lines = append(lines, fmt.Sprintf("- %s: %.2f ₽ / %.2f ₽ %s", displayName, spent, limit, status))
 	}
 
-	if len(lines) == 0 {
+	if len(lines) == 0 && totalIncome == 0 {
 		return ""
 	}
 
-	monthName := month.Format("January")
-	balance := totalIncome - totalSpent
+	balance = totalIncome - totalSpent
 	emoji := "🟢"
 	if balance < 0 {
 		emoji = "🔴"
@@ -86,14 +94,42 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 		emoji = "🟡"
 	}
 
-	return fmt.Sprintf(`%s **Месячный отчёт за %s** %s
+	monthName := getMonthName(month, lang)
 
-💼 *Доходы*: %.2f ₽
-💸 *Расходы*: %.2f ₽
-📊 *Баланс*: %.2f ₽
+	report := fmt.Sprintf(`%s `+i18n.T("monthly_report_title", lang)+` %s
 
-...
-`, emoji, monthName, emoji, totalIncome, totalSpent, balance)
+`+i18n.T("monthly_income", lang)+`
+`+i18n.T("monthly_expenses", lang)+`
+`+i18n.T("monthly_balance", lang)+`
+
+`+i18n.T("monthly_categories", lang)+`:
+%s
+
+`+i18n.T("monthly_over_limits", lang)+`
+
+`+i18n.T("monthly_thanks", lang)+`
+`,
+		emoji, monthName, emoji,
+		totalIncome, totalSpent, balance,
+		strings.Join(lines, "\n"),
+		overLimit,
+	)
+
+	return report
+}
+
+// TODO helper
+func getMonthName(t time.Time, lang string) string {
+	months := map[string][]string{
+		"ru": {"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+			"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"},
+		"en": {"January", "February", "March", "April", "May", "June",
+			"July", "August", "September", "October", "November", "December"},
+	}
+	if m, ok := months[lang]; ok {
+		return m[t.Month()-1]
+	}
+	return t.Month().String()
 }
 
 // удаляет траты старше 3 месяцев

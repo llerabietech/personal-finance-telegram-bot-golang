@@ -19,6 +19,8 @@ const (
 	MainMenu                 UserState = "main_menu"
 	CategoriesMenu           UserState = "categories_menu"
 	LimitsMenu               UserState = "limits_menu"
+	StateChoosingLanguage              = "choosing_language"
+	StateMainMenu                      = "main_menu"
 )
 
 const StateTTL = 5 * time.Minute // Время жизни состояния (защита от "зависаний")
@@ -64,4 +66,12 @@ func stateKey(chatID int64) string {
 
 func tempKey(chatID int64) string {
 	return "user:temp:" + strconv.FormatInt(chatID, 10)
+}
+
+func SetUserLanguage(chatID int64, lang string) error {
+    return db.RedisClient.Set(db.Ctx, "user:lang:"+strconv.FormatInt(chatID, 10), lang, 0).Err()
+}
+
+func GetUserLanguage(chatID int64) (string, error) {
+    return db.RedisClient.Get(db.Ctx, "user:lang:"+strconv.FormatInt(chatID, 10)).Result()
 }
