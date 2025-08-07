@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// отправляет отчёт за предыдущий месяц всем пользователям
+// sends a report for the previous month to all users
 func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 	now := time.Now()
 	prevMonth := now.AddDate(0, -1, 0)
@@ -35,12 +35,11 @@ func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 	CleanupOldExpenses()
 }
 
-// generateReportForUser — генерирует отчёт для одного пользователя
+// generates a report for a single user
 func generateReportForUser(chatID int64, monthStr string, month time.Time) string {
-	// 🔹 Получаем язык пользователя
 	lang, err := state.GetUserLanguage(chatID)
 	if err != nil {
-		lang = "ru" // fallback
+		lang = "en"
 	}
 
 	rows, err := db.DB.Query(`
@@ -61,7 +60,6 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 	var totalSpent, totalIncome, balance float64
 	var overLimit int
 
-	// 🔹 Сумма доходов
 	db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM incomes WHERE user_id = ? AND date LIKE ?",
 		chatID, monthStr+"%").Scan(&totalIncome)
 
@@ -132,17 +130,15 @@ func getMonthName(t time.Time, lang string) string {
 	return t.Month().String()
 }
 
-// удаляет траты старше 3 месяцев
 func CleanupOldExpenses() {
-	// Определяем дату: всё, что раньше 3 месяцев — удаляем
 	threeMonthsAgo := time.Now().AddDate(0, -3, 0).Format("2006-01-02")
 
 	result, err := db.DB.Exec("DELETE FROM expenses WHERE date < ?", threeMonthsAgo)
 	if err != nil {
-		println("Ошибка при удалении старых трат:", err.Error())
+		println("Error when deleting old expenses:", err.Error())
 		return
 	}
 
 	rows, _ := result.RowsAffected()
-	println("Очистка: удалено", rows, "старых трат (до", threeMonthsAgo+")")
+	println("Cleanup: deleted", rows, "old expenses (before", threeMonthsAgo+")")
 }

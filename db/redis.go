@@ -15,7 +15,6 @@ func InitRedis(password string) {
         DB:       0,   
     })
 
-    // Проверка подключения
     _, err := RedisClient.Ping(Ctx).Result()
     if err != nil {
         panic("Couldn't connect to Redis: " + err.Error())

@@ -20,7 +20,7 @@ type Expense struct {
 	UserID     int64
 	CategoryID int
 	Amount     float64
-	Date       string // YYYY-MM-DD
+	Date       string 
 }
 
 type Income struct {
@@ -28,5 +28,5 @@ type Income struct {
     UserID   int64
     Source   string
     Amount   float64
-    Date     string  // YYYY-MM-DD
+    Date     string 
 }

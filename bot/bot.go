@@ -30,16 +30,14 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	text := update.Message.Text
 	chatID := update.Message.Chat.ID
 
-	// Получаем язык
 	lang, err := state.GetUserLanguage(chatID)
 	if err != nil {
 		lang = "en"
 	}
 
-	// Получаем текущее состояние
 	userState, _ := state.GetState(chatID)
 
-	// === 1. Сначала проверяем состояния ввода (FSM) ===
+	// check the input states
 	switch userState {
 	case state.AwaitingCategoryName:
 		result := commands.HandleNewCategoryName(chatID, text, lang)
@@ -62,7 +60,6 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		return
 
 	case state.AwaitingLimitUpdate:
-		// Сохраняем имя категории
 		categoryName := strings.TrimSpace(text)
 		if categoryName == "" {
 			msg.Text = i18n.T("empty_name", lang)
@@ -108,7 +105,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		return
 	}
 
-	// === 2. Обработка команд ===
+	// Command processing
 	switch text {
 	case "/start":
 		state.SetState(chatID, state.StateChoosingLanguage)
@@ -144,7 +141,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		return
 	}
 
-	// === 3. Подменю и команды ===
+	// Submenus and commands
 	switch userState {
 	case state.CategoriesMenu:
 		handleCategoriesMenu(chatID, text, &msg, lang)
@@ -156,7 +153,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		return
 	}
 
-	// === 4. Основные команды ===
+	// Basic commands
 	switch text {
 	case i18n.T("analytics", lang):
 		msg.Text = commands.GetAnalytics(chatID, lang)
@@ -184,7 +181,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		if commands.IsPotentialExpense(chatID, text) {
 			msg.Text = commands.AddExpense(bot, chatID, text, lang)
 			msg.ReplyMarkup = commands.GetMainMenu(lang)
-		} else if isPotentialIncome(text) {
+		} else if commands.IsPotentialIncome(text) {
 			msg.Text = commands.AddIncome(chatID, text, lang)
 			msg.ReplyMarkup = commands.GetMainMenu(lang)
 		} else {
@@ -194,15 +191,6 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	}
 
 	bot.Send(msg)
-}
-
-func isPotentialIncome(text string) bool {
-	parts := strings.Fields(text)
-	if len(parts) != 2 {
-		return false
-	}
-	_, err := strconv.ParseFloat(parts[1], 64)
-	return err == nil
 }
 
 func handleCategoriesMenu(chatID int64, text string, msg *tgbotapi.MessageConfig, lang string) {
