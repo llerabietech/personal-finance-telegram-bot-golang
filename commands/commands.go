@@ -8,6 +8,7 @@ import (
 	"personal-finance/db"
 	"personal-finance/i18n"
 	"personal-finance/state"
+	"personal-finance/utils"
 	"strconv"
 	"strings"
 	"time"
@@ -82,7 +83,7 @@ func AddCategory(chatID int64, input string, lang string) string {
 		return i18n.T("error_add_category", lang)
 	}
 
-	return i18n.Tf("category_created", lang, name, limit)
+	return utils.FormatAmount(i18n.Tf("category_created", lang, name, limit), lang)
 }
 
 func AddExpense(bot *tgbotapi.BotAPI, chatID int64, input string, lang string) string {
@@ -219,7 +220,7 @@ func GetAnalytics(chatID int64, lang string) string {
 		details = strings.Join(report, "\n")
 	}
 
-	return i18n.Tf("analytics_title", lang, monthName(month), totalIncome, totalExpenses, balanceEmoji, balance, details)
+	return utils.FormatAmount(i18n.Tf("analytics_title", lang, monthName(month), totalIncome, totalExpenses, balanceEmoji, balance, details), lang)
 }
 
 // TODO add russian
@@ -267,7 +268,7 @@ func CreateCategory(chatID int64, name string, limit float64, lang string) strin
 	if err != nil {
 		return i18n.T("error_create_category", lang)
 	}
-	return i18n.Tf("category_created", lang, strings.Title(name), limit)
+	return utils.FormatAmount(i18n.Tf("category_created", lang, strings.Title(name), limit), lang)
 }
 
 func UpdateLimit(chatID int64, categoryName string, newLimit float64, lang string) string {
@@ -299,7 +300,7 @@ func UpdateLimit(chatID int64, categoryName string, newLimit float64, lang strin
 		return i18n.T("error_update_limit", lang)
 	}
 
-	return i18n.Tf("updated_limit", lang, currentLimit, newLimit)
+	return utils.FormatAmount(i18n.Tf("updated_limit", lang, currentLimit, newLimit), lang)
 }
 
 func HandleNewCategoryName(chatID int64, text string, lang string) string {
@@ -353,10 +354,10 @@ func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, cat
 	sent := false
 
 	if percent >= 100 {
-		msgText = i18n.Tf("limit_is_overloaded", lang, strings.Title(categoryName), spent, limitSum)
+		msgText = utils.FormatAmount(i18n.Tf("limit_is_overloaded", lang, strings.Title(categoryName), spent, limitSum), lang)
 		sent = true
 	} else if percent >= 80 {
-		msgText = i18n.Tf("limit_warning", lang, math.Round(percent), strings.Title(categoryName), spent, limitSum)
+		msgText = utils.FormatAmount(i18n.Tf("limit_warning", lang, math.Round(percent), strings.Title(categoryName), spent, limitSum), lang)
 		sent = true
 	}
 
@@ -388,7 +389,7 @@ func HandleDeleteCategory(chatID int64, categoryName string, lang string) string
 	state.SetState(chatID, state.ConfirmDeleteCategory)
 
 	displayName := strings.Title(name)
-	return i18n.Tf("confirm_delete", lang, displayName, limit)
+	return utils.FormatAmount(i18n.Tf("confirm_delete", lang, displayName, limit), lang)
 }
 
 // ConfirmDelete — подтверждение удаления
@@ -452,5 +453,5 @@ func AddIncome(chatID int64, input string, lang string) string {
 		return i18n.T("error_save_income", lang)
 	}
 
-	return i18n.Tf("add_income", lang, strings.Title(source), amount)
+	return utils.FormatAmount(i18n.Tf("add_income", lang, strings.Title(source), amount), lang)
 }

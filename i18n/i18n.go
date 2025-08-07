@@ -1,6 +1,15 @@
 package i18n
 
-import "fmt"
+import (
+	"fmt"
+)
+
+var CurrencySymbols = map[string]string{
+	"ru": "₽",
+	"en": "$",
+	//TODO
+	// "es": "€",
+}
 
 var Translations = map[string]map[string]string{
 	"ru": {
@@ -21,17 +30,17 @@ var Translations = map[string]map[string]string{
 		"enter_category_name":          "Введите название новой категории:",
 		"enter_category_name_delete":   "Введите название категории для удаления:",
 		"enter_limit":                  "Теперь установите лимит (например: 5000)",
-		"category_created":             "✅ Категория '%s' добавлена с лимитом %.2f ₽",
+		"category_created":             "✅ Категория '%s' добавлена с лимитом %.2f {{currency}}",
 		"invalid_amount":               "❌ Сумма должна быть числом.",
 		"category_not_found":           "❌ Категория '%s' не найдена.",
-		"limit_updated":                "✅ Лимит для '%s' обновлён: %.2f ₽",
-		"confirm_delete":               "⚠️ Вы уверены, что хотите удалить категорию *%s* (лимит: %.2f ₽)?\n" + "Все траты по ней будут безвозвратно удалены.\n" + "Напишите *да* для подтверждения, или любое другое сообщение для отмены.",
+		"limit_updated":                "✅ Лимит для '%s' обновлён: %.2f {{currency}}",
+		"confirm_delete":               "⚠️ Вы уверены, что хотите удалить категорию *%s* (лимит: %.2f {{currency}})?\n" + "Все траты по ней будут безвозвратно удалены.\n" + "Напишите *да* для подтверждения, или любое другое сообщение для отмены.",
 		"delete_cancelled":             "✅ Удаление отменено.",
 		"category_deleted":             "✅ Категория и все траты по ней удалены.",
 		"enter_income":                 "Введите: источник сумма (например: зарплата 100000)",
 		"enter_expense":                "Введите: категория сумма (например: еда 500)",
 		"invalid_format":               "❌ Неверный формат.",
-		"analytics_title":              "📈 **Аналитика за %s**\n\n💼 *Доходы*: %.2f ₽\n💸 *Расходы*: %.2f ₽\n📊 *Баланс*: %s %.2f ₽ 📋 *По категориям*:%s Спасибо, что управляете финансами с умом! 💼",
+		"analytics_title":              "📈 **Аналитика за %s**\n\n💼 *Доходы*: %.2f {{currency}}\n💸 *Расходы*: %.2f {{currency}}\n📊 *Баланс*: %s %.2f {{currency}} 📋 *По категориям*:%s Спасибо, что управляете финансами с умом! 💼",
 		"empty_name":                   "Имя не может быть пустым. Попробуйте снова:",
 		"enter_new_limit":              "Введите новый лимит для *%s*:",
 		"correct_digit":                "Введите корректное положительное число.",
@@ -41,7 +50,7 @@ var Translations = map[string]map[string]string{
 		"invalid_format_expense":       "❌ Неверный формат. Используйте: категория сумма (например: еда 500)",
 		"error_found_category":         "❌ Ошибка при поиске категории.",
 		"error_save_expense":           "❌ Ошибка при сохранении траты.",
-		"add_expense":                  "✅ Трата добавлена: %s — %.2f ₽",
+		"add_expense":                  "✅ Трата добавлена: %s — %.2f {{currency}}",
 		"error_load_category":          "Ошибка загрузки категорий.",
 		"error_empty_category":         "Категории отсутствуют.",
 		"categories2":                  "Категории:\n• ",
@@ -52,10 +61,10 @@ var Translations = map[string]map[string]string{
 		"error_category_already_exist": "Категория уже существует.",
 		"error_category_name_is_empty": "❌ Название категории не может быть пустым.",
 		"error_update_limit":           "❌ Ошибка при обновлении лимита.",
-		"updated_limit":                "✅ Лимит для категории *%s* обновлён:\n Было: %.2f ₽ → Стало: %.2f ₽",
+		"updated_limit":                "✅ Лимит для категории *%s* обновлён:\n Было: %.2f {{currency}} → Стало: %.2f {{currency}}",
 		"enter_limit2":                 "Категория: %s. Установите лимит:",
-		"limit_is_overloaded":          "❌ Лимит по категории *%s* превышен!\n" + "Потрачено: %.2f ₽ (лимит: %.2f ₽)",
-		"limit_warning":                "⚠️ Внимание! Вы потратили *%.0f%%* лимита на *%s*.\n" + "Потрачено: %.2f ₽ из %.2f ₽",
+		"limit_is_overloaded":          "❌ Лимит по категории *%s* превышен!\n" + "Потрачено: %.2f {{currency}} (лимит: %.2f {{currency}})",
+		"limit_warning":                "⚠️ Внимание! Вы потратили *%.0f%%* лимита на *%s*.\n" + "Потрачено: %.2f {{currency}} из %.2f {{currency}}",
 		"category_not_found2":          "❌ Категория не найдена.",
 		"error_old_data":               "❌ Данные устарели. Начните заново.",
 		"error_delete":                 "❌ Ошибка при удалении.",
@@ -65,11 +74,11 @@ var Translations = map[string]map[string]string{
 		"invalid_format2":              "❌ Неверный формат. Используйте: источник сумма (например: зарплата 75000)",
 		"error_summ":                   "❌ Сумма должна быть положительным числом.",
 		"error_save_income":            "❌ Ошибка при сохранении дохода.",
-		"add_income":                   "✅ Доход добавлен: %s — %.2f ₽",
+		"add_income":                   "✅ Доход добавлен: %s — %.2f {{currency}}",
 		"monthly_report_title":         "%s **Месячный отчёт за %s** %s",
-		"monthly_income":               "💼 *Доходы*: %.2f ₽",
-		"monthly_expenses":             "💸 *Расходы*: %.2f ₽",
-		"monthly_balance":              "📊 *Баланс*: %.2f ₽",
+		"monthly_income":               "💼 *Доходы*: %.2f {{currency}}",
+		"monthly_expenses":             "💸 *Расходы*: %.2f {{currency}}",
+		"monthly_balance":              "📊 *Баланс*: %.2f {{currency}}",
 		"monthly_categories":           "📋 *По категориям*:",
 		"monthly_over_limits":          "📌 *Превышено лимитов*: %d шт.",
 		"monthly_thanks":               "Спасибо, что используете финансового помощника! 💼",
@@ -94,17 +103,17 @@ var Translations = map[string]map[string]string{
 		"enter_category_name":          "Enter the name of the new category:",
 		"enter_category_name_delete":   "Enter the name of the category to delete:",
 		"enter_limit":                  "Now set the limit (e.g.: 5000)",
-		"category_created":             "✅ Category '%s' added with limit %.2f ₽",
+		"category_created":             "✅ Category '%s' added with limit %.2f {{currency}}",
 		"invalid_amount":               "❌ Amount must be a number.",
 		"category_not_found":           "❌ Category '%s' not found.",
-		"limit_updated":                "✅ Limit for '%s' updated: %.2f ₽",
+		"limit_updated":                "✅ Limit for '%s' updated: %.2f {{currency}}",
 		"confirm_delete":               "⚠️ Are you sure you want to delete category *%s*?\nType *yes* to confirm.",
 		"delete_cancelled":             "✅ Deletion cancelled.",
 		"category_deleted":             "✅ Category and all related expenses deleted.",
 		"enter_income":                 "Enter: source amount (e.g.: salary 75000)",
 		"enter_expense":                "Enter: category amount (e.g.: food 500)",
 		"invalid_format":               "❌ Invalid format.",
-		"analytics_title":              "📈 **Analytics for %s**\n\n *Income*: %.2f ₽\n💸 *Expenses*: %.2f ₽\n📊 *Balance*: %s%.2f ₽ 📋 *By category*:%s Thank you for managing your finances wisely! 💼",
+		"analytics_title":              "📈 **Analytics for %s**\n\n *Income*: %.2f {{currency}}\n💸 *Expenses*: %.2f {{currency}}\n📊 *Balance*: %s%.2f {{currency}} 📋 *By category*:%s Thank you for managing your finances wisely! 💼",
 		"empty_name":                   "The name cannot be empty. Try again:",
 		"enter_new_limit":              "Enter a new limit for *%s*:",
 		"correct_digit":                "Enter the correct positive number.",
@@ -114,7 +123,7 @@ var Translations = map[string]map[string]string{
 		"invalid_format_expense":       "❌ Incorrect format. Use: amount category (for example: food 500)",
 		"error_found_category":         "❌ Error when searching for a category.",
 		"error_save_expense":           "❌ An error occurred when saving money.",
-		"add_expense":                  "✅ Expense added: %s — %.2f ₽",
+		"add_expense":                  "✅ Expense added: %s — %.2f {{currency}}",
 		"error_load_category":          "Error loading categories.",
 		"error_empty_category":         "There are no categories.",
 		"categories2":                  "Categories:\n•",
@@ -125,10 +134,10 @@ var Translations = map[string]map[string]string{
 		"error_category_already_exist": "The category already exists.",
 		"error_category_name_is_empty": "❌ The category name cannot be empty.",
 		"error_update_limit":           "❌ Error when updating the limit.",
-		"updated_limit":                "✅ The limit for the *%s* category has been updated:\n Was: %.2f ₽ → It became: %.2f",
+		"updated_limit":                "✅ The limit for the *%s* category has been updated:\n Was: %.2f {{currency}} → It became: %.2f",
 		"enter_limit2":                 "Category: %s. Set a limit:",
-		"limit_is_overloaded":          "❌ The limit for the *%s* category has been exceeded!\n" + "Spent: %.2f ₽ (limit: %.2f ₽)",
-		"limit_warning":                "⚠️ Attention! You have spent *%.0f%%* of the limit on *%s*.\n" + "Spent: %.2f ₽ from %.2f ₽",
+		"limit_is_overloaded":          "❌ The limit for the *%s* category has been exceeded!\n" + "Spent: %.2f {{currency}} (limit: %.2f {{currency}})",
+		"limit_warning":                "⚠️ Attention! You have spent *%.0f%%* of the limit on *%s*.\n" + "Spent: %.2f {{currency}} from %.2f {{currency}}",
 		"category_not_found2":          "❌ The category was not found.",
 		"error_old_data":               "❌ The data is outdated. Start over.",
 		"error_delete":                 "❌ Error when deleting.",
@@ -140,9 +149,9 @@ var Translations = map[string]map[string]string{
 		"error_save_income":            "❌ Error saving income.",
 		"add_income":                   "✅ Income added: %s — %.2f",
 		"monthly_report_title":         "%s **Monthly Report for %s** %s",
-		"monthly_income":               "💼 *Income*: %.2f ₽",
-		"monthly_expenses":             "💸 *Expenses*: %.2f ₽",
-		"monthly_balance":              "📊 *Balance*: %.2f ₽",
+		"monthly_income":               "💼 *Income*: %.2f {{currency}}",
+		"monthly_expenses":             "💸 *Expenses*: %.2f {{currency}}",
+		"monthly_balance":              "📊 *Balance*: %.2f {{currency}}",
 		"monthly_categories":           "📋 *By categories*:",
 		"monthly_over_limits":          "📌 *Limits exceeded*: %d items",
 		"monthly_thanks":               "Thank you for using your financial assistant! 💼",
@@ -163,4 +172,11 @@ func T(key, lang string) string {
 
 func Tf(key, lang string, args ...interface{}) string {
 	return fmt.Sprintf(T(key, lang), args...)
+}
+
+func Currency(lang string) string {
+	if symbol, exists := CurrencySymbols[lang]; exists {
+		return symbol
+	}
+	return "$" // default
 }

@@ -96,7 +96,7 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 
 	monthName := getMonthName(month, lang)
 
-	report := fmt.Sprintf(`%s `+i18n.T("monthly_report_title", lang)+` %s
+	report := utils.FormatAmount(fmt.Sprintf(`%s `+i18n.T("monthly_report_title", lang)+` %s
 
 `+i18n.T("monthly_income", lang)+`
 `+i18n.T("monthly_expenses", lang)+`
@@ -113,7 +113,7 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 		totalIncome, totalSpent, balance,
 		strings.Join(lines, "\n"),
 		overLimit,
-	)
+	), lang)
 
 	return report
 }
