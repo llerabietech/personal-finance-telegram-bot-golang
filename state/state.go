@@ -16,6 +16,9 @@ const (
 	AwaitingNewLimitValue    UserState = "awaiting_new_limit_value"
 	AwaitingCategoryToDelete UserState = "awaiting_category_to_delete"
 	ConfirmDeleteCategory    UserState = "confirm_delete_category"
+	MainMenu                 UserState = "main_menu"
+	CategoriesMenu           UserState = "categories_menu"
+	LimitsMenu               UserState = "limits_menu"
 )
 
 const StateTTL = 5 * time.Minute // Время жизни состояния (защита от "зависаний")

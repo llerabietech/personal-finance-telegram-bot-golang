@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func GetMainKeyboard() tgbotapi.ReplyKeyboardMarkup {
+func GetMainMenu() tgbotapi.ReplyKeyboardMarkup {
 	return tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("➕ Трата"),
@@ -24,11 +24,35 @@ func GetMainKeyboard() tgbotapi.ReplyKeyboardMarkup {
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("📊 Аналитика"),
+		),
+	)
+}
+
+func GetCategoriesMenu() tgbotapi.ReplyKeyboardMarkup {
+	return tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("📋 Список категорий"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("➕ Добавить категорию"),
+			tgbotapi.NewKeyboardButton("🗑 Удалить категорию"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("⬅️ Назад"),
+		),
+	)
+}
+
+func GetLimitsMenu() tgbotapi.ReplyKeyboardMarkup {
+	return tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("🎯 Лимиты по категориям"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("💸 Изменить лимит"),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("🆕 Добавить категорию"),
-			tgbotapi.NewKeyboardButton("🗑 Удалить категорию"),
+			tgbotapi.NewKeyboardButton("⬅️ Назад"),
 		),
 	)
 }
@@ -132,67 +156,67 @@ func ListLimits(chatID int64) string {
 }
 
 func GetAnalytics(chatID int64) string {
-    month := time.Now().Format("2006-01")
+	month := time.Now().Format("2006-01")
 
-    // 🔹 Сумма доходов
-    var totalIncome float64
-    err := db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM incomes WHERE user_id = ? AND date LIKE ?", 
-        chatID, month+"%").Scan(&totalIncome)
-    if err != nil {
-        totalIncome = 0
-    }
+	// 🔹 Сумма доходов
+	var totalIncome float64
+	err := db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM incomes WHERE user_id = ? AND date LIKE ?",
+		chatID, month+"%").Scan(&totalIncome)
+	if err != nil {
+		totalIncome = 0
+	}
 
-    // 🔹 Сумма расходов
-    var totalExpenses float64
-    err = db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM expenses e JOIN categories c ON e.category_id = c.id WHERE e.user_id = ? AND e.date LIKE ?", 
-        chatID, month+"%").Scan(&totalExpenses)
-    if err != nil {
-        totalExpenses = 0
-    }
+	// 🔹 Сумма расходов
+	var totalExpenses float64
+	err = db.DB.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM expenses e JOIN categories c ON e.category_id = c.id WHERE e.user_id = ? AND e.date LIKE ?",
+		chatID, month+"%").Scan(&totalExpenses)
+	if err != nil {
+		totalExpenses = 0
+	}
 
-    // 🔹 Расходы по категориям
-    rows, err := db.DB.Query(`
+	// 🔹 Расходы по категориям
+	rows, err := db.DB.Query(`
         SELECT c.name, SUM(e.amount), c.limit_sum 
         FROM expenses e
         JOIN categories c ON e.category_id = c.id
         WHERE e.user_id = ? AND e.date LIKE ?
         GROUP BY c.name, c.limit_sum`, chatID, month+"%")
-    if err != nil {
-        return "Ошибка загрузки данных."
-    }
-    defer rows.Close()
+	if err != nil {
+		return "Ошибка загрузки данных."
+	}
+	defer rows.Close()
 
-    var report []string
-    for rows.Next() {
-        var name string
-        var spent, limit float64
-        rows.Scan(&name, &spent, &limit)
-        status := "✅"
-        if spent > limit {
-            status = "❌"
-        }
-        report = append(report, fmt.Sprintf("• %s: %.2f ₽ / %.2f ₽ %s", name, spent, limit, status))
-    }
+	var report []string
+	for rows.Next() {
+		var name string
+		var spent, limit float64
+		rows.Scan(&name, &spent, &limit)
+		status := "✅"
+		if spent > limit {
+			status = "❌"
+		}
+		report = append(report, fmt.Sprintf("• %s: %.2f ₽ / %.2f ₽ %s", name, spent, limit, status))
+	}
 
-    // 🔹 Формируем итог
-    balance := totalIncome - totalExpenses
-    balanceEmoji := "🟢"
-    if balance < 0 {
-        balanceEmoji = "🔴"
-    } else if balance < totalIncome*0.1 {
-        balanceEmoji = "🟡"
-    }
+	// 🔹 Формируем итог
+	balance := totalIncome - totalExpenses
+	balanceEmoji := "🟢"
+	if balance < 0 {
+		balanceEmoji = "🔴"
+	} else if balance < totalIncome*0.1 {
+		balanceEmoji = "🟡"
+	}
 
-    incomeStr := fmt.Sprintf("💼 *Доходы*: %.2f ₽", totalIncome)
-    expensesStr := fmt.Sprintf("💸 *Расходы*: %.2f ₽", totalExpenses)
-    balanceStr := fmt.Sprintf("📊 *Баланс*: %s %.2f ₽", balanceEmoji, balance)
+	incomeStr := fmt.Sprintf("💼 *Доходы*: %.2f ₽", totalIncome)
+	expensesStr := fmt.Sprintf("💸 *Расходы*: %.2f ₽", totalExpenses)
+	balanceStr := fmt.Sprintf("📊 *Баланс*: %s %.2f ₽", balanceEmoji, balance)
 
-    details := "—"
-    if len(report) > 0 {
-        details = strings.Join(report, "\n")
-    }
+	details := "—"
+	if len(report) > 0 {
+		details = strings.Join(report, "\n")
+	}
 
-    return fmt.Sprintf(`📈 **Аналитика за %s**
+	return fmt.Sprintf(`📈 **Аналитика за %s**
 
 %s
 %s
@@ -201,15 +225,15 @@ func GetAnalytics(chatID int64) string {
 📋 *По категориям*:
 %s
 
-Спасибо, что управляете финансами с умом! 💼`, 
-        monthName(month), incomeStr, expensesStr, balanceStr, details)
+Спасибо, что управляете финансами с умом! 💼`,
+		monthName(month), incomeStr, expensesStr, balanceStr, details)
 }
 
 func monthName(monthStr string) string {
-    parts := strings.Split(monthStr, "-")
-    year, month := parts[0], parts[1]
-    timeVal, _ := time.Parse("2006-01", year+"-"+month)
-    return strings.Title(strings.ToLower(timeVal.Format("January")))
+	parts := strings.Split(monthStr, "-")
+	year, month := parts[0], parts[1]
+	timeVal, _ := time.Parse("2006-01", year+"-"+month)
+	return strings.Title(strings.ToLower(timeVal.Format("January")))
 }
 
 // IsPotentialExpense проверяет, является ли текст попыткой ввода траты: "категория сумма"
@@ -253,39 +277,39 @@ func CreateCategory(chatID int64, name string, limit float64) string {
 }
 
 func UpdateLimit(chatID int64, categoryName string, newLimit float64) string {
-    // Чистим ввод
-    name := strings.ToLower(strings.TrimSpace(categoryName))
-    if name == "" {
-        return "❌ Название категории не может быть пустым."
-    }
+	// Чистим ввод
+	name := strings.ToLower(strings.TrimSpace(categoryName))
+	if name == "" {
+		return "❌ Название категории не может быть пустым."
+	}
 
-    // Проверяем, существует ли категория у пользователя
-    var categoryID int
-    var currentLimit float64
+	// Проверяем, существует ли категория у пользователя
+	var categoryID int
+	var currentLimit float64
 
-    err := db.DB.QueryRow(`
+	err := db.DB.QueryRow(`
         SELECT id, limit_sum 
         FROM categories 
-        WHERE user_id = ? AND LOWER(name) = ?`, 
-        chatID, name).Scan(&categoryID, &currentLimit)
+        WHERE user_id = ? AND LOWER(name) = ?`,
+		chatID, name).Scan(&categoryID, &currentLimit)
 
-    if err == sql.ErrNoRows {
-        return fmt.Sprintf("❌ Категория '%s' не найдена. Проверьте список командой /categories.", strings.Title(name))
-    } else if err != nil {
-        return "❌ Ошибка при поиске категории: " + err.Error()
-    }
+	if err == sql.ErrNoRows {
+		return fmt.Sprintf("❌ Категория '%s' не найдена. Проверьте список командой /categories.", strings.Title(name))
+	} else if err != nil {
+		return "❌ Ошибка при поиске категории: " + err.Error()
+	}
 
-    // Обновляем лимит
-    _, err = db.DB.Exec("UPDATE categories SET limit_sum = ? WHERE id = ?", newLimit, categoryID)
-    if err != nil {
-        return "❌ Ошибка при обновлении лимита."
-    }
+	// Обновляем лимит
+	_, err = db.DB.Exec("UPDATE categories SET limit_sum = ? WHERE id = ?", newLimit, categoryID)
+	if err != nil {
+		return "❌ Ошибка при обновлении лимита."
+	}
 
-    return fmt.Sprintf(
-        "✅ Лимит для категории *%s* обновлён:\n"+
-        "Было: %.2f ₽ → Стало: %.2f ₽",
-        strings.Title(name), currentLimit, newLimit,
-    )
+	return fmt.Sprintf(
+		"✅ Лимит для категории *%s* обновлён:\n"+
+			"Было: %.2f ₽ → Стало: %.2f ₽",
+		strings.Title(name), currentLimit, newLimit,
+	)
 }
 
 func HandleNewCategoryName(chatID int64, text string) string {
@@ -360,92 +384,92 @@ func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, cat
 
 // HandleDeleteCategory — обработка ввода названия категории
 func HandleDeleteCategory(chatID int64, categoryName string) string {
-    name := strings.ToLower(strings.TrimSpace(categoryName))
+	name := strings.ToLower(strings.TrimSpace(categoryName))
 
-    var categoryID int
-    var limit float64
-    err := db.DB.QueryRow("SELECT id, limit_sum FROM categories WHERE user_id = ? AND LOWER(name) = ?", 
-        chatID, name).Scan(&categoryID, &limit)
+	var categoryID int
+	var limit float64
+	err := db.DB.QueryRow("SELECT id, limit_sum FROM categories WHERE user_id = ? AND LOWER(name) = ?",
+		chatID, name).Scan(&categoryID, &limit)
 
-    if err == sql.ErrNoRows {
-        return "❌ Категория не найдена."
-    } else if err != nil {
-        return "❌ Ошибка при поиске категории."
-    }
+	if err == sql.ErrNoRows {
+		return "❌ Категория не найдена."
+	} else if err != nil {
+		return "❌ Ошибка при поиске категории."
+	}
 
-    // Сохраняем ID во временное хранилище
-    state.SetTempData(chatID, fmt.Sprintf("%d", categoryID))
-    state.SetState(chatID, state.ConfirmDeleteCategory)
+	// Сохраняем ID во временное хранилище
+	state.SetTempData(chatID, fmt.Sprintf("%d", categoryID))
+	state.SetState(chatID, state.ConfirmDeleteCategory)
 
-    displayName := strings.Title(name)
-    return fmt.Sprintf(
-        "⚠️ Вы уверены, что хотите удалить категорию *%s* (лимит: %.2f ₽)?\n"+
-        "Все траты по ней будут безвозвратно удалены.\n"+
-        "Напишите *да* для подтверждения, или любое другое сообщение для отмены.",
-        displayName, limit,
-    )
+	displayName := strings.Title(name)
+	return fmt.Sprintf(
+		"⚠️ Вы уверены, что хотите удалить категорию *%s* (лимит: %.2f ₽)?\n"+
+			"Все траты по ней будут безвозвратно удалены.\n"+
+			"Напишите *да* для подтверждения, или любое другое сообщение для отмены.",
+		displayName, limit,
+	)
 }
 
 // ConfirmDelete — подтверждение удаления
 func ConfirmDelete(chatID int64, answer string) string {
-    categoryIDStr, err := state.GetTempData(chatID)
-    if err != nil {
-        state.Clear(chatID)
-        return "❌ Данные устарели. Начните заново."
-    }
+	categoryIDStr, err := state.GetTempData(chatID)
+	if err != nil {
+		state.Clear(chatID)
+		return "❌ Данные устарели. Начните заново."
+	}
 
-    if strings.ToLower(answer) != "да" && strings.ToLower(answer) != "yes" {
-        state.Clear(chatID)
-        return "✅ Удаление отменено."
-    }
+	if strings.ToLower(answer) != "да" && strings.ToLower(answer) != "yes" {
+		state.Clear(chatID)
+		return "✅ Удаление отменено."
+	}
 
-    var categoryID int
-    fmt.Sscanf(categoryIDStr, "%d", &categoryID)
+	var categoryID int
+	fmt.Sscanf(categoryIDStr, "%d", &categoryID)
 
-    // Удаляем траты и категорию
-    tx, err := db.DB.Begin()
-    if err != nil {
-        return "❌ Ошибка при удалении."
-    }
+	// Удаляем траты и категорию
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return "❌ Ошибка при удалении."
+	}
 
-    _, err = tx.Exec("DELETE FROM expenses WHERE category_id = ?", categoryID)
-    if err != nil {
-        tx.Rollback()
-        return "❌ Ошибка при удалении трат."
-    }
+	_, err = tx.Exec("DELETE FROM expenses WHERE category_id = ?", categoryID)
+	if err != nil {
+		tx.Rollback()
+		return "❌ Ошибка при удалении трат."
+	}
 
-    _, err = tx.Exec("DELETE FROM categories WHERE id = ?", categoryID)
-    if err != nil {
-        tx.Rollback()
-        return "❌ Ошибка при удалении категории."
-    }
+	_, err = tx.Exec("DELETE FROM categories WHERE id = ?", categoryID)
+	if err != nil {
+		tx.Rollback()
+		return "❌ Ошибка при удалении категории."
+	}
 
-    err = tx.Commit()
-    if err != nil {
-        return "❌ Ошибка подтверждения изменений."
-    }
+	err = tx.Commit()
+	if err != nil {
+		return "❌ Ошибка подтверждения изменений."
+	}
 
-    state.Clear(chatID)
-    return "✅ Категория и все траты по ней успешно удалены."
+	state.Clear(chatID)
+	return "✅ Категория и все траты по ней успешно удалены."
 }
 
 func AddIncome(chatID int64, input string) string {
-    parts := strings.Fields(input)
-    if len(parts) != 2 {
-        return "❌ Неверный формат. Используйте: источник сумма (например: зарплата 75000)"
-    }
+	parts := strings.Fields(input)
+	if len(parts) != 2 {
+		return "❌ Неверный формат. Используйте: источник сумма (например: зарплата 75000)"
+	}
 
-    source := strings.ToLower(strings.TrimSpace(parts[0]))
-    amount, err := strconv.ParseFloat(parts[1], 64)
-    if err != nil || amount <= 0 {
-        return "❌ Сумма должна быть положительным числом."
-    }
+	source := strings.ToLower(strings.TrimSpace(parts[0]))
+	amount, err := strconv.ParseFloat(parts[1], 64)
+	if err != nil || amount <= 0 {
+		return "❌ Сумма должна быть положительным числом."
+	}
 
-    _, err = db.DB.Exec("INSERT INTO incomes (user_id, source, amount, date) VALUES (?, ?, ?, ?)",
-        chatID, source, amount, time.Now().Format("2006-01-02"))
-    if err != nil {
-        return "❌ Ошибка при сохранении дохода."
-    }
+	_, err = db.DB.Exec("INSERT INTO incomes (user_id, source, amount, date) VALUES (?, ?, ?, ?)",
+		chatID, source, amount, time.Now().Format("2006-01-02"))
+	if err != nil {
+		return "❌ Ошибка при сохранении дохода."
+	}
 
-    return fmt.Sprintf("✅ Доход добавлен: %s — %.2f ₽", strings.Title(source), amount)
+	return fmt.Sprintf("✅ Доход добавлен: %s — %.2f ₽", strings.Title(source), amount)
 }
