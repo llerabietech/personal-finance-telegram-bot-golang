@@ -8,26 +8,26 @@ Perfect for budgeting, saving, and staying on top of your finances.
 
 ## 🚀 Features
 
-- ✅ **Expense Tracking**: Log spending with simple commands like `food 500`
-- ✅ **Income Tracking**: Record income sources like `salary 80000`
-- ✅ **Categories & Limits**: Create categories (e.g., food, transport) with monthly spending limits
-- ✅ **Spending Alerts**:
+-  **Expense Tracking**: Log spending with simple commands like `food 500`
+-  **Income Tracking**: Record income sources like `salary 80000`
+-  **Categories & Limits**: Create categories (e.g., food, transport) with monthly spending limits
+-  **Spending Alerts**:
   - ⚠️ Warns at 80% of limit
   - ❌ Alerts when limit is exceeded
-- ✅ **Monthly Reports**: Automatic summary sent on the 1st of each month
-- ✅ **Analytics**: View monthly breakdown by category and balance (income vs expenses)
-- ✅ **Multi-Language Support**:
+-  **Monthly Reports**: Automatic summary sent on the 1st of each month
+-  **Analytics**: View monthly breakdown by category and balance (income vs expenses)
+-  **Multi-Language Support**:
   - 🇷🇺 Russian
   - 🇬🇧 English
   - Language selected at `/start`
-- ✅ **Dynamic Menu System**:
+-  **Dynamic Menu System**:
   - Hierarchical navigation (Categories, Limits)
   - Back button and clean UX
-- ✅ **Data Management**:
+-  **Data Management**:
   - SQLite for persistent storage
   - Redis for session state (FSM)
   - Auto-cleanup of expenses older than 3 months
-- ✅ **Currency Support**: Auto currency symbol (₽ for RU, $ for EN)
+-  **Currency Support**: Auto currency symbol (₽ for RU, $ for EN)
 
 ## 🛠️ Tech Stack
 
@@ -71,6 +71,9 @@ go run main.go
 
 Start the bot in Telegram with /start
 
+### 📂 Project Structure
+
+```
 personal-finance-telegram-bot-golang/
 ├── main.go
 ├── bot/
@@ -93,3 +96,4 @@ personal-finance-telegram-bot-golang/
 │   └── format.go       
 │   └── text.go       # Title case with golang.org/x/text
 └── README.md
+```
