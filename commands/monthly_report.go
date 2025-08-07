@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// SendMonthlyReport отправляет отчёт за предыдущий месяц всем пользователям
+// отправляет отчёт за предыдущий месяц всем пользователям
 func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 	now := time.Now()
 	// Предыдущий месяц: например, если сейчас 1 апреля — берём март
@@ -29,6 +29,9 @@ func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 			bot.Send(msg)
 		}
 	}
+
+	// После отправки всех отчётов — чистим старые траты
+    CleanupOldExpenses()
 }
 
 // generateReportForUser — генерирует отчёт для одного пользователя
@@ -91,4 +94,19 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 Спасибо, что используете финансового помощника! 💼`,
 		emoji, strings.Title(strings.ToLower(monthName)), emoji, totalSpent,
 		strings.Join(lines, "\n"), overLimit)
+}
+
+//удаляет траты старше 3 месяцев
+func CleanupOldExpenses() {
+    // Определяем дату: всё, что раньше 3 месяцев — удаляем
+    threeMonthsAgo := time.Now().AddDate(0, -3, 0).Format("2006-01-02")
+
+    result, err := db.DB.Exec("DELETE FROM expenses WHERE date < ?", threeMonthsAgo)
+    if err != nil {
+        println("Ошибка при удалении старых трат:", err.Error())
+        return
+    }
+
+    rows, _ := result.RowsAffected()
+    println("Очистка: удалено", rows, "старых трат (до", threeMonthsAgo + ")")
 }
