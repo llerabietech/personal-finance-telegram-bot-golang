@@ -177,7 +177,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 	case i18n.T("limits", lang):
 		state.SetState(chatID, state.LimitsMenu)
-		msg.Text = "🎯 " + i18n.T("limits", lang)
+		msg.Text = i18n.T("limits", lang)
 		msg.ReplyMarkup = commands.GetLimitsMenu(lang)
 
 	default:
@@ -239,7 +239,7 @@ func handleLimitsMenu(chatID int64, text string, msg *tgbotapi.MessageConfig, la
 		msg.ReplyMarkup = commands.GetLimitsMenu(lang)
 
 	case i18n.T("change_limit", lang):
-		msg.Text = i18n.T("enter_category_name", lang)
+		msg.Text = i18n.T("enter_category_name_for_limit", lang)
 		state.SetState(chatID, state.AwaitingLimitUpdate)
 		msg.ReplyMarkup = commands.GetLimitsMenu(lang)
 

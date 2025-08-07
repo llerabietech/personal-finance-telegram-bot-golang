@@ -323,7 +323,7 @@ func HandleNewCategoryName(chatID int64, text string, lang string) string {
 	state.SetTempData(chatID, name)
 	state.SetState(chatID, state.AwaitingCategoryLimit)
 
-	return i18n.Tf("error_category_already_exist", lang, strings.Title(name))
+	return i18n.Tf("enter_limit2", lang, strings.Title(name))
 }
 
 func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, categoryName string, lang string) {
