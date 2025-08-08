@@ -8,34 +8,37 @@ Perfect for budgeting, saving, and staying on top of your finances.
 
 ## 🚀 Features
 
--  **Expense Tracking**: Log spending with simple commands like `food 500`
--  **Income Tracking**: Record income sources like `salary 80000`
--  **Categories & Limits**: Create categories (e.g., food, transport) with monthly spending limits
--  **Spending Alerts**:
+- ✅ **Expense & Income Tracking**: Log with simple commands like `food 500` or `salary 80000`
+- ✅ **Categories & Monthly Limits**: Create categories with spending limits
+- ✅ **Spending Alerts**:
   - ⚠️ Warns at 80% of limit
   - ❌ Alerts when limit is exceeded
--  **Monthly Reports**: Automatic summary sent on the 1st of each month
--  **Analytics**: View monthly breakdown by category and balance (income vs expenses)
--  **Multi-Language Support**:
+- ✅ **Analytics**: View monthly breakdown by category and balance (income vs expenses)
+- ✅ **Monthly Reports**: Automatic summary sent on the 1st of each month
+- ✅ **Multi-Language Support**:
   - 🇷🇺 Russian
   - 🇬🇧 English
   - Language selected at `/start`
--  **Dynamic Menu System**:
+- ✅ **Dynamic Menu System**:
   - Hierarchical navigation (Categories, Limits)
   - Back button and clean UX
--  **Data Management**:
+- ✅ **Data Management**:
   - SQLite for persistent storage
   - Redis for session state (FSM)
   - Auto-cleanup of expenses older than 3 months
--  **Currency Support**: Auto currency symbol (₽ for RU, $ for EN)
+- ✅ **Currency Support**: Auto currency symbol (₽ for RU, $ for EN)
+- ✅ **Docker & Makefile**: Easy deployment and local development
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Language**: Go 1.21+
+- **Language**: Go 1.24+
 - **Telegram API**: [go-telegram-bot-api](https://github.com/go-telegram-bot-api/telegram-bot-api)
 - **Database**: SQLite (expenses, categories, incomes)
 - **Session Storage**: Redis (user states, language, temp data)
 - **Localization**: Custom i18n system with dynamic currency
+- **Build & Deploy**: Docker, Docker Compose, Makefile
 - **Architecture**: Modular (commands, db, state, i18n)
 
 ## 📦 Installation
@@ -53,23 +56,41 @@ cd personal-finance-telegram-bot-golang
 go mod tidy
 ```
 
-### 3. Run Redis (via Docker)
+### 3. Create .env file
 
 ```bash
-docker run --name finance-redis -p 6379:6379 -d redis:alpine
+  TELEGRAM_TOKEN=your_telegram_bot_token_here
+  REDIS_PASSWORD=strongpassword123
 ```
+> Get a token from [@BotFather](https://t.me/BotFather) on Telegram.
+>
+> This file is auto-created by `make up` if missing.
 
-### 4. Set environment variable
+### ▶️ Run with Docker (Recommended)
 
-Get a token from @BotFather on Telegram. Create config.json in /configs
+We use Docker Compose to run the bot and Redis together.
 
-### ▶️ Run the Bot
+### Build and start
+```bash
+make up
+```
+> This will:
+>
+> - Build the bot image
+> - Start Redis with persistence and password
+> - Connect bot to Redis via service name `redis:6379`
+> - Load environment from `.env`
+
+### Other Make commands
 
 ```bash
-go run main.go
+make build    # Build image only
+make logs     # View bot logs
+make down     # Stop containers
+make clean    # Stop and remove containers
+make env      # Show .env variables
+make help     # Show all commands
 ```
-
-Start the bot in Telegram with /start
 
 ### 📂 Project Structure
 
@@ -86,8 +107,6 @@ personal-finance-telegram-bot-golang/
 ├── commands/
 │   ├── commands.go
 │   └── monthly_report.go
-├── configs/
-│   ├── config.json
 ├── state/
 │   └── state.go      # FSM & user language
 ├── i18n/
@@ -95,5 +114,10 @@ personal-finance-telegram-bot-golang/
 ├── utils/
 │   └── format.go       
 │   └── text.go       # Title case with golang.org/x/text
+|   └── month.go      # Localized month names
+├── Dockerfile        
+├── docker-compose.yml 
+├── Makefile          # Dev commands
+├── .env              # Auto-created
 └── README.md
 ```

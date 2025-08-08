@@ -51,7 +51,7 @@ func createTables() {
 	}
 }
 
-func GetAllUsers() ([]int64, error) {
+func GetActiveUsersLastQuarter() ([]int64, error) {
     rows, err := DB.Query("SELECT DISTINCT user_id FROM expenses WHERE date >= date('now', '-3 month')")
     if err != nil {
         return nil, err

@@ -17,7 +17,7 @@ func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 	prevMonth := now.AddDate(0, -1, 0)
 	monthStr := prevMonth.Format("2006-01")
 
-	users, err := db.GetAllUsers()
+	users, err := db.GetActiveUsersLastQuarter()
 	if err != nil {
 		fmt.Println("Error receiving users:", err)
 		return
@@ -92,7 +92,7 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 		emoji = "🟡"
 	}
 
-	monthName := getMonthName(month, lang)
+	monthName := utils.GetMonthName(month, lang)
 
 	report := utils.FormatAmount(fmt.Sprintf(`%s `+i18n.T("monthly_report_title", lang)+` %s
 
@@ -114,20 +114,6 @@ func generateReportForUser(chatID int64, monthStr string, month time.Time) strin
 	), lang)
 
 	return report
-}
-
-// TODO helper
-func getMonthName(t time.Time, lang string) string {
-	months := map[string][]string{
-		"ru": {"Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-			"Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"},
-		"en": {"January", "February", "March", "April", "May", "June",
-			"July", "August", "September", "October", "November", "December"},
-	}
-	if m, ok := months[lang]; ok {
-		return m[t.Month()-1]
-	}
-	return t.Month().String()
 }
 
 func CleanupOldExpenses() {

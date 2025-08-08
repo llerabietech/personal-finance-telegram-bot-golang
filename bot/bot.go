@@ -6,6 +6,7 @@ import (
 	"personal-finance/commands"
 	"personal-finance/i18n"
 	"personal-finance/state"
+	"personal-finance/utils"
 	"strconv"
 	"strings"
 )
@@ -68,7 +69,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 		}
 		state.SetTempData(chatID, categoryName)
 		state.SetState(chatID, state.AwaitingNewLimitValue)
-		msg.Text = fmt.Sprintf(i18n.T("enter_new_limit", lang), strings.Title(categoryName))
+		msg.Text = fmt.Sprintf(i18n.T("enter_new_limit", lang), utils.Title.String(categoryName))
 		msg.ParseMode = "Markdown"
 		bot.Send(msg)
 		return
@@ -169,7 +170,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 	case i18n.T("categories", lang):
 		state.SetState(chatID, state.CategoriesMenu)
-		msg.Text = "🔧 " + i18n.T("categories", lang)
+		msg.Text = i18n.T("categories", lang)
 		msg.ReplyMarkup = commands.GetCategoriesMenu(lang)
 
 	case i18n.T("limits", lang):
