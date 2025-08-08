@@ -33,7 +33,7 @@ Perfect for budgeting, saving, and staying on top of your finances.
 
 ## 🛠️ Tech Stack
 
-- **Language**: Go 1.21+
+- **Language**: Go 1.24+
 - **Telegram API**: [go-telegram-bot-api](https://github.com/go-telegram-bot-api/telegram-bot-api)
 - **Database**: SQLite (expenses, categories, incomes)
 - **Session Storage**: Redis (user states, language, temp data)
