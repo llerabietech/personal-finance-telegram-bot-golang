@@ -62,27 +62,26 @@ go mod tidy
   TELEGRAM_TOKEN=your_telegram_bot_token_here
   REDIS_PASSWORD=strongpassword123
 ```
-Get a token from @BotFather on Telegram. 
-
-This file is auto-created by make up if missing. 
+> Get a token from [@BotFather](https://t.me/BotFather) on Telegram.
+>
+> This file is auto-created by `make up` if missing.
 
 ### ▶️ Run with Docker (Recommended)
 
 We use Docker Compose to run the bot and Redis together.
 
-## Build and start
+### Build and start
 ```bash
 make up
 ```
-This will: 
+> This will:
+>
+> - Build the bot image
+> - Start Redis with persistence and password
+> - Connect bot to Redis via service name `redis:6379`
+> - Load environment from `.env`
 
-Build the bot image
-Start Redis with persistence and password
-Connect bot to Redis via service name redis:6379
-Load environment from .env
-Start the bot in Telegram with /start
-
-## Other Make commands
+### Other Make commands
 
 ```bash
 make build    # Build image only
