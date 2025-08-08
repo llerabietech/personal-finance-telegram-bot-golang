@@ -120,7 +120,7 @@ func AddExpense(bot *tgbotapi.BotAPI, chatID int64, input string, lang string) s
 
 	go CheckLimitAndNotify(bot, chatID, categoryID, categoryName, lang)
 
-	return i18n.Tf("add_expense", lang, utils.Title.String(categoryName), amount)
+	return utils.FormatAmount(i18n.Tf("add_expense", lang, utils.Title.String(categoryName), amount), lang)
 }
 
 func ListCategories(chatID int64, lang string) string {
