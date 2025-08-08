@@ -109,7 +109,7 @@ var Translations = map[string]map[string]string{
 		"invalid_amount":                "❌ Amount must be a number.",
 		"category_not_found":            "❌ Category '%s' not found.",
 		"limit_updated":                 "✅ Limit for '%s' updated: %.2f {{currency}}",
-		"confirm_delete":                "⚠️ Are you sure you want to delete category *%s*?\nType *yes* to confirm.",
+		"confirm_delete":                "⚠️ Are you sure you want to delete the category *%s* (limit: %.2f {{currency}})?\n" + "All expenses on it will be permanently deleted.\n"+ "Write *yes* to confirm, or any other message to cancel.",
 		"delete_cancelled":              "✅ Deletion cancelled.",
 		"category_deleted":              "✅ Category and all related expenses deleted.",
 		"enter_income":                  "Enter: source amount (e.g.: salary 75000)",

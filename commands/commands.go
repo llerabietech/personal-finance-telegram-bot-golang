@@ -120,7 +120,7 @@ func AddExpense(bot *tgbotapi.BotAPI, chatID int64, input string, lang string) s
 
 	go CheckLimitAndNotify(bot, chatID, categoryID, categoryName, lang)
 
-	return i18n.Tf("category_not_found", lang, strings.Title(categoryName), amount)
+	return i18n.Tf("category_created", lang, utils.Title.String(categoryName), amount)
 }
 
 func ListCategories(chatID int64, lang string) string {
@@ -222,7 +222,7 @@ func monthName(monthStr string) string {
 	parts := strings.Split(monthStr, "-")
 	year, month := parts[0], parts[1]
 	timeVal, _ := time.Parse("2006-01", year+"-"+month)
-	return strings.Title(strings.ToLower(timeVal.Format("January")))
+	return utils.Title.String(strings.ToLower(timeVal.Format("January")))
 }
 
 func IsPotentialExpense(chatID int64, text string) bool {
@@ -259,7 +259,7 @@ func CreateCategory(chatID int64, name string, limit float64, lang string) strin
 	if err != nil {
 		return i18n.T("error_create_category", lang)
 	}
-	return utils.FormatAmount(i18n.Tf("category_created", lang, strings.Title(name), limit), lang)
+	return utils.FormatAmount(i18n.Tf("category_created", lang, utils.Title.String(name), limit), lang)
 }
 
 func UpdateLimit(chatID int64, categoryName string, newLimit float64, lang string) string {
@@ -278,7 +278,7 @@ func UpdateLimit(chatID int64, categoryName string, newLimit float64, lang strin
 		chatID, name).Scan(&categoryID, &currentLimit)
 
 	if err == sql.ErrNoRows {
-		return i18n.Tf("category_not_found", lang, strings.Title(name))
+		return i18n.Tf("category_not_found", lang, utils.Title.String(name))
 	} else if err != nil {
 		return i18n.T("error_found_category", lang) + err.Error()
 	}
@@ -288,7 +288,7 @@ func UpdateLimit(chatID int64, categoryName string, newLimit float64, lang strin
 		return i18n.T("error_update_limit", lang)
 	}
 
-	return utils.FormatAmount(i18n.Tf("limit_updated", lang, strings.Title(name), currentLimit, newLimit), lang)
+	return utils.FormatAmount(i18n.Tf("updated_limit", lang, utils.Title.String(name), currentLimit, newLimit), lang)
 }
 
 func HandleNewCategoryName(chatID int64, text string, lang string) string {
@@ -310,7 +310,7 @@ func HandleNewCategoryName(chatID int64, text string, lang string) string {
 	state.SetTempData(chatID, name)
 	state.SetState(chatID, state.AwaitingCategoryLimit)
 
-	return i18n.Tf("enter_limit2", lang, strings.Title(name))
+	return i18n.Tf("enter_limit2", lang, utils.Title.String(name))
 }
 
 func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, categoryName string, lang string) {
@@ -339,10 +339,10 @@ func CheckLimitAndNotify(bot *tgbotapi.BotAPI, chatID int64, categoryID int, cat
 	sent := false
 
 	if percent >= 100 {
-		msgText = utils.FormatAmount(i18n.Tf("limit_is_overloaded", lang, strings.Title(categoryName), spent, limitSum), lang)
+		msgText = utils.FormatAmount(i18n.Tf("limit_is_overloaded", lang, utils.Title.String(categoryName), spent, limitSum), lang)
 		sent = true
 	} else if percent >= 80 {
-		msgText = utils.FormatAmount(i18n.Tf("limit_warning", lang, math.Round(percent), strings.Title(categoryName), spent, limitSum), lang)
+		msgText = utils.FormatAmount(i18n.Tf("limit_warning", lang, math.Round(percent), utils.Title.String(categoryName), spent, limitSum), lang)
 		sent = true
 	}
 
@@ -370,7 +370,7 @@ func HandleDeleteCategory(chatID int64, categoryName string, lang string) string
 	state.SetTempData(chatID, fmt.Sprintf("%d", categoryID))
 	state.SetState(chatID, state.ConfirmDeleteCategory)
 
-	displayName := strings.Title(name)
+	displayName := utils.Title.String(name)
 	return utils.FormatAmount(i18n.Tf("confirm_delete", lang, displayName, limit), lang)
 }
 
@@ -433,7 +433,7 @@ func AddIncome(chatID int64, input string, lang string) string {
 		return i18n.T("error_save_income", lang)
 	}
 
-	return utils.FormatAmount(i18n.Tf("add_income", lang, strings.Title(source), amount), lang)
+	return utils.FormatAmount(i18n.Tf("add_income", lang, utils.Title.String(source), amount), lang)
 }
 
 func IsPotentialIncome(text string) bool {

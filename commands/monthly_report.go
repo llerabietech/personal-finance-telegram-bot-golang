@@ -17,7 +17,7 @@ func SendMonthlyReport(bot *tgbotapi.BotAPI) {
 	prevMonth := now.AddDate(0, -1, 0)
 	monthStr := prevMonth.Format("2006-01")
 
-	users, err := db.GetAllUsers()
+	users, err := db.GetActiveUsersLastQuarter()
 	if err != nil {
 		fmt.Println("Error receiving users:", err)
 		return
