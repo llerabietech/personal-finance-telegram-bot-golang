@@ -115,8 +115,8 @@ personal-finance-telegram-bot-golang/
 │   └── format.go       
 │   └── text.go       # Title case with golang.org/x/text
 |   └── month.go      # Localized month names
-├── Dockerfile        # Multi-stage build with CGO_ENABLED=1
-├── docker-compose.yml # Redis + bot, with password
+├── Dockerfile        
+├── docker-compose.yml 
 ├── Makefile          # Dev commands
 ├── .env              # Auto-created
 └── README.md
