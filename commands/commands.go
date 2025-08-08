@@ -120,7 +120,7 @@ func AddExpense(bot *tgbotapi.BotAPI, chatID int64, input string, lang string) s
 
 	go CheckLimitAndNotify(bot, chatID, categoryID, categoryName, lang)
 
-	return i18n.Tf("category_created", lang, utils.Title.String(categoryName), amount)
+	return i18n.Tf("add_expense", lang, utils.Title.String(categoryName), amount)
 }
 
 func ListCategories(chatID int64, lang string) string {
@@ -214,15 +214,7 @@ func GetAnalytics(chatID int64, lang string) string {
 		details = strings.Join(report, "\n")
 	}
 
-	return utils.FormatAmount(i18n.Tf("analytics_title", lang, monthName(month), totalIncome, totalExpenses, balanceEmoji, balance, details), lang)
-}
-
-// TODO add russian
-func monthName(monthStr string) string {
-	parts := strings.Split(monthStr, "-")
-	year, month := parts[0], parts[1]
-	timeVal, _ := time.Parse("2006-01", year+"-"+month)
-	return utils.Title.String(strings.ToLower(timeVal.Format("January")))
+	return utils.FormatAmount(i18n.Tf("analytics_title", lang, utils.GetMonthName(time.Now(), lang), totalIncome, totalExpenses, balanceEmoji, balance, details), lang)
 }
 
 func IsPotentialExpense(chatID int64, text string) bool {
