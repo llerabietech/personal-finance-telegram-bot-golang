@@ -2,6 +2,7 @@ package i18n
 
 import (
 	"fmt"
+	"personal-finance/internal/config"
 )
 
 var CurrencySymbols = map[string]string{
@@ -109,7 +110,7 @@ var Translations = map[string]map[string]string{
 		"invalid_amount":                "❌ Amount must be a number.",
 		"category_not_found":            "❌ Category '%s' not found.",
 		"limit_updated":                 "✅ Limit for '%s' updated: %.2f {{currency}}",
-		"confirm_delete":                "⚠️ Are you sure you want to delete the category *%s* (limit: %.2f {{currency}})?\n" + "All expenses on it will be permanently deleted.\n"+ "Write *yes* to confirm, or any other message to cancel.",
+		"confirm_delete":                "⚠️ Are you sure you want to delete the category *%s* (limit: %.2f {{currency}})?\n" + "All expenses on it will be permanently deleted.\n" + "Write *yes* to confirm, or any other message to cancel.",
 		"delete_cancelled":              "✅ Deletion cancelled.",
 		"category_deleted":              "✅ Category and all related expenses deleted.",
 		"enter_income":                  "Enter: source amount (e.g.: salary 75000)",
@@ -162,23 +163,30 @@ var Translations = map[string]map[string]string{
 	},
 }
 
-func T(key, lang string) string {
-	if lang != "ru" && lang != "en" {
-		lang = "ru"
-	}
+func T(key, lang string, cfg *config.Config) string {
+	lang = toValidLang(lang, cfg)
 	if text, exists := Translations[lang][key]; exists {
 		return text
 	}
 	return key
 }
 
-func Tf(key, lang string, args ...interface{}) string {
-	return fmt.Sprintf(T(key, lang), args...)
+func Tf(key, lang string, cfg *config.Config, args ...interface{}) string {
+	return fmt.Sprintf(T(key, lang, cfg), args...)
 }
 
-func Currency(lang string) string {
+func toValidLang(lang string, cfg *config.Config) string {
+	for _, supportedLang := range cfg.App.Languages {
+		if lang == supportedLang {
+			return lang
+		}
+	}
+	return cfg.App.DefaultLanguage
+}
+
+func Currency(lang string, cfg *config.Config) string {
 	if symbol, exists := CurrencySymbols[lang]; exists {
 		return symbol
 	}
-	return "$" // default
+	return cfg.App.CurrencySymbol // default
 }

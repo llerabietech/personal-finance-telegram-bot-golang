@@ -1,17 +1,22 @@
 package bot
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
-	"github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"personal-finance/commands"
 	"personal-finance/i18n"
+	"personal-finance/internal/config"
 	"personal-finance/state"
 	"personal-finance/utils"
 	"strconv"
 	"strings"
+
+	"github.com/go-redis/redis/v8"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func StartBot(bot *tgbotapi.BotAPI) {
+func StartBot(bot *tgbotapi.BotAPI, db *sql.DB, redis *redis.Client, cfg *config.Config) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
@@ -22,26 +27,27 @@ func StartBot(bot *tgbotapi.BotAPI) {
 			continue
 		}
 
-		go handleUpdate(bot, update)
+		go handleUpdate(bot, update, db, redis, cfg)
 	}
 }
 
-func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redis *redis.Client, cfg *config.Config) {
+	ctx := context.Background()
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 	text := update.Message.Text
 	chatID := update.Message.Chat.ID
 
-	lang, err := state.GetUserLanguage(chatID)
+	lang, err := state.GetUserLanguage(ctx, redis, chatID)
 	if err != nil {
 		lang = "en"
 	}
 
-	userState, _ := state.GetState(chatID)
+	userState, _ := state.GetState(ctx, redis, chatID)
 
 	// check the input states
 	switch userState {
 	case state.AwaitingCategoryName:
-		result := commands.HandleNewCategoryName(chatID, text, lang)
+		result := commands.HandleNewCategoryName(ctx, db, redis, chatID, text, lang, cfg)
 		msg.Text = result
 		bot.Send(msg)
 		return
@@ -49,27 +55,27 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	case state.AwaitingCategoryLimit:
 		amount, err := strconv.ParseFloat(text, 64)
 		if err != nil || amount <= 0 {
-			msg.Text = i18n.T("invalid_amount", lang)
+			msg.Text = i18n.T("invalid_amount", lang, cfg)
 			bot.Send(msg)
 			return
 		}
-		categoryName, _ := state.GetTempData(chatID)
-		msg.Text = commands.CreateCategory(chatID, categoryName, amount, lang)
-		state.Clear(chatID)
-		msg.ReplyMarkup = commands.GetMainMenu(lang)
+		categoryName, _ := state.GetTempData(ctx, redis, chatID)
+		msg.Text = commands.CreateCategory(ctx, db, chatID, categoryName, amount, lang, cfg)
+		state.Clear(ctx, redis, chatID)
+		msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 		bot.Send(msg)
 		return
 
 	case state.AwaitingLimitUpdate:
 		categoryName := strings.TrimSpace(text)
 		if categoryName == "" {
-			msg.Text = i18n.T("empty_name", lang)
+			msg.Text = i18n.T("empty_name", lang, cfg)
 			bot.Send(msg)
 			return
 		}
-		state.SetTempData(chatID, categoryName)
-		state.SetState(chatID, state.AwaitingNewLimitValue)
-		msg.Text = fmt.Sprintf(i18n.T("enter_new_limit", lang), utils.Title.String(categoryName))
+		state.SetTempData(ctx, redis, chatID, categoryName)
+		state.SetState(ctx, redis, chatID, state.AwaitingNewLimitValue)
+		msg.Text = fmt.Sprintf(i18n.T("enter_new_limit", lang, cfg), utils.Title.String(categoryName))
 		msg.ParseMode = "Markdown"
 		bot.Send(msg)
 		return
@@ -77,30 +83,30 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	case state.AwaitingNewLimitValue:
 		amount, err := strconv.ParseFloat(text, 64)
 		if err != nil || amount <= 0 {
-			msg.Text = i18n.T("correct_digit", lang)
+			msg.Text = i18n.T("correct_digit", lang, cfg)
 			bot.Send(msg)
 			return
 		}
-		categoryName, err := state.GetTempData(chatID)
+		categoryName, err := state.GetTempData(ctx, redis, chatID)
 		if err != nil {
-			msg.Text = i18n.T("outdated_session", lang)
-			state.Clear(chatID)
+			msg.Text = i18n.T("outdated_session", lang, cfg)
+			state.Clear(ctx, redis, chatID)
 			bot.Send(msg)
 			return
 		}
-		msg.Text = commands.UpdateLimit(chatID, categoryName, amount, lang)
-		state.Clear(chatID)
+		msg.Text = commands.UpdateLimit(ctx, db, chatID, categoryName, amount, lang, cfg)
+		state.Clear(ctx, redis, chatID)
 		bot.Send(msg)
 		return
 
 	case state.AwaitingCategoryToDelete:
-		result := commands.HandleDeleteCategory(chatID, text, lang)
+		result := commands.HandleDeleteCategory(ctx, db, redis, chatID, text, lang, cfg)
 		msg.Text = result
 		bot.Send(msg)
 		return
 
 	case state.ConfirmDeleteCategory:
-		result := commands.ConfirmDelete(chatID, text, lang)
+		result := commands.ConfirmDelete(ctx, db, redis, chatID, text, lang, cfg)
 		msg.Text = result
 		bot.Send(msg)
 		return
@@ -109,9 +115,9 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	// Command processing
 	switch text {
 	case "/start":
-		state.SetState(chatID, state.StateChoosingLanguage)
-		msg.Text = i18n.T("welcome", lang)
-		msg.ReplyMarkup = commands.GetLanguageKeyboard()
+		state.SetState(ctx, redis, chatID, state.StateChoosingLanguage)
+		msg.Text = i18n.T("welcome", lang, cfg)
+		msg.ReplyMarkup = commands.GetLanguageKeyboard(cfg)
 		bot.Send(msg)
 		return
 
@@ -121,23 +127,23 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 			if text == "🇬🇧 English" {
 				selectedLang = "en"
 			}
-			state.SetUserLanguage(chatID, selectedLang)
-			state.SetState(chatID, state.StateMainMenu)
+			state.SetUserLanguage(ctx, redis, chatID, selectedLang)
+			state.SetState(ctx, redis, chatID, state.StateMainMenu)
 
-			msg.Text = i18n.T("language_selected", selectedLang)
-			msg.ReplyMarkup = commands.GetMainMenu(selectedLang)
+			msg.Text = i18n.T("language_selected", selectedLang, cfg)
+			msg.ReplyMarkup = commands.GetMainMenu(selectedLang, cfg)
 			bot.Send(msg)
 		} else {
-			msg.Text = i18n.T("menu_main", lang)
-			msg.ReplyMarkup = commands.GetMainMenu(lang)
+			msg.Text = i18n.T("menu_main", lang, cfg)
+			msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 			bot.Send(msg)
 		}
 		return
 
-	case i18n.T("back", lang):
-		state.SetState(chatID, state.StateMainMenu)
-		msg.Text = i18n.T("menu_main", lang)
-		msg.ReplyMarkup = commands.GetMainMenu(lang)
+	case i18n.T("back", lang, cfg):
+		state.SetState(ctx, redis, chatID, state.StateMainMenu)
+		msg.Text = i18n.T("menu_main", lang, cfg)
+		msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 		bot.Send(msg)
 		return
 	}
@@ -145,100 +151,100 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	// Submenus and commands
 	switch userState {
 	case state.CategoriesMenu:
-		handleCategoriesMenu(chatID, text, &msg, lang)
+		handleCategoriesMenu(ctx, db, redis, chatID, text, &msg, lang, cfg)
 		bot.Send(msg)
 		return
 	case state.LimitsMenu:
-		handleLimitsMenu(chatID, text, &msg, lang)
+		handleLimitsMenu(ctx, db, redis, chatID, text, &msg, lang, cfg)
 		bot.Send(msg)
 		return
 	}
 
 	// Basic commands
 	switch text {
-	case i18n.T("analytics", lang):
-		msg.Text = commands.GetAnalytics(chatID, lang)
-		msg.ReplyMarkup = commands.GetMainMenu(lang)
+	case i18n.T("analytics", lang, cfg):
+		msg.Text = commands.GetAnalytics(ctx, db, chatID, lang, cfg)
+		msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 
-	case i18n.T("income", lang):
-		msg.Text = i18n.T("enter_income", lang)
-		msg.ReplyMarkup = commands.GetMainMenu(lang)
+	case i18n.T("income", lang, cfg):
+		msg.Text = i18n.T("enter_income", lang, cfg)
+		msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 
-	case i18n.T("expenses", lang):
-		msg.Text = i18n.T("enter_expense", lang)
-		msg.ReplyMarkup = commands.GetMainMenu(lang)
+	case i18n.T("expenses", lang, cfg):
+		msg.Text = i18n.T("enter_expense", lang, cfg)
+		msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 
-	case i18n.T("categories", lang):
-		state.SetState(chatID, state.CategoriesMenu)
-		msg.Text = i18n.T("categories", lang)
-		msg.ReplyMarkup = commands.GetCategoriesMenu(lang)
+	case i18n.T("categories", lang, cfg):
+		state.SetState(ctx, redis, chatID, state.CategoriesMenu)
+		msg.Text = i18n.T("categories", lang, cfg)
+		msg.ReplyMarkup = commands.GetCategoriesMenu(lang, cfg)
 
-	case i18n.T("limits", lang):
-		state.SetState(chatID, state.LimitsMenu)
-		msg.Text = i18n.T("limits", lang)
-		msg.ReplyMarkup = commands.GetLimitsMenu(lang)
+	case i18n.T("limits", lang, cfg):
+		state.SetState(ctx, redis, chatID, state.LimitsMenu)
+		msg.Text = i18n.T("limits", lang, cfg)
+		msg.ReplyMarkup = commands.GetLimitsMenu(lang, cfg)
 
 	default:
-		if commands.IsPotentialExpense(chatID, text) {
-			msg.Text = commands.AddExpense(bot, chatID, text, lang)
-			msg.ReplyMarkup = commands.GetMainMenu(lang)
-		} else if commands.IsPotentialIncome(text) {
-			msg.Text = commands.AddIncome(chatID, text, lang)
-			msg.ReplyMarkup = commands.GetMainMenu(lang)
+		if commands.IsPotentialExpense(ctx, db, chatID, text) {
+			msg.Text = commands.AddExpense(bot, ctx, db, chatID, text, lang, cfg)
+			msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
+		} else if commands.IsPotentialIncome(ctx, db, chatID, text) {
+			msg.Text = commands.AddIncome(ctx, db, chatID, text, lang, cfg)
+			msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 		} else {
-			msg.Text = "❌ " + i18n.T("invalid_format", lang)
-			msg.ReplyMarkup = commands.GetMainMenu(lang)
+			msg.Text = "❌ " + i18n.T("invalid_format", lang, cfg)
+			msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 		}
 	}
 
 	bot.Send(msg)
 }
 
-func handleCategoriesMenu(chatID int64, text string, msg *tgbotapi.MessageConfig, lang string) {
+func handleCategoriesMenu(ctx context.Context, db *sql.DB, redis *redis.Client, chatID int64, text string, msg *tgbotapi.MessageConfig, lang string, cfg *config.Config) {
 	switch text {
-	case i18n.T("list_categories", lang):
-		msg.Text = commands.ListCategories(chatID, lang)
-		msg.ReplyMarkup = commands.GetCategoriesMenu(lang)
+	case i18n.T("list_categories", lang, cfg):
+		msg.Text = commands.ListCategories(ctx, db, chatID, lang, cfg)
+		msg.ReplyMarkup = commands.GetCategoriesMenu(lang, cfg)
 
-	case i18n.T("add_category", lang):
-		msg.Text = i18n.T("enter_category_name", lang)
-		state.SetState(chatID, state.AwaitingCategoryName)
-		msg.ReplyMarkup = commands.GetCategoriesMenu(lang)
+	case i18n.T("add_category", lang, cfg):
+		msg.Text = i18n.T("enter_category_name", lang, cfg)
+		state.SetState(ctx, redis, chatID, state.AwaitingCategoryName)
+		msg.ReplyMarkup = commands.GetCategoriesMenu(lang, cfg)
 
-	case i18n.T("delete_category", lang):
-		msg.Text = i18n.T("enter_category_name_delete", lang)
-		state.SetState(chatID, state.AwaitingCategoryToDelete)
-		msg.ReplyMarkup = commands.GetCategoriesMenu(lang)
+	case i18n.T("delete_category", lang, cfg):
+		msg.Text = i18n.T("enter_category_name_delete", lang, cfg)
+		state.SetState(ctx, redis, chatID, state.AwaitingCategoryToDelete)
+		msg.ReplyMarkup = commands.GetCategoriesMenu(lang, cfg)
 
-	case i18n.T("back", lang):
-		state.SetState(chatID, state.MainMenu)
-		msg.Text = i18n.T("menu_main", lang)
-		msg.ReplyMarkup = commands.GetMainMenu(lang)
+	case i18n.T("back", lang, cfg):
+		state.SetState(ctx, redis, chatID, state.MainMenu)
+		msg.Text = i18n.T("menu_main", lang, cfg)
+		msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 
 	default:
-		msg.Text = i18n.T("unknown_cmd", lang)
-		msg.ReplyMarkup = commands.GetCategoriesMenu(lang)
+		msg.Text = i18n.T("unknown_cmd", lang, cfg)
+		msg.ReplyMarkup = commands.GetCategoriesMenu(lang, cfg)
 	}
 }
 
-func handleLimitsMenu(chatID int64, text string, msg *tgbotapi.MessageConfig, lang string) {
+func handleLimitsMenu(ctx context.Context, db *sql.DB, redis *redis.Client, chatID int64, text string, msg *tgbotapi.MessageConfig, lang string, cfg *config.Config) {
 	switch text {
-	case i18n.T("limits_list", lang):
-		msg.Text = commands.ListLimits(chatID, lang)
-		msg.ReplyMarkup = commands.GetLimitsMenu(lang)
+	case i18n.T("limits_list", lang, cfg):
+		msg.Text = commands.ListLimits(ctx, db, chatID, lang, cfg)
+		msg.ReplyMarkup = commands.GetLimitsMenu(lang, cfg)
 
-	case i18n.T("change_limit", lang):
-		msg.Text = i18n.T("enter_category_name_for_limit", lang)
-		state.SetState(chatID, state.AwaitingLimitUpdate)
-		msg.ReplyMarkup = commands.GetLimitsMenu(lang)
+	case i18n.T("change_limit", lang, cfg):
+		msg.Text = i18n.T("enter_category_name_for_limit", lang, cfg)
+		state.SetState(ctx, redis, chatID, state.AwaitingLimitUpdate)
+		msg.ReplyMarkup = commands.GetLimitsMenu(lang, cfg)
 
-	case i18n.T("back", lang):
-		state.SetState(chatID, state.MainMenu)
-		msg.Text = i18n.T("menu_main", lang)
-		msg.ReplyMarkup = commands.GetMainMenu(lang)
+	case i18n.T("back", lang, cfg):
+		state.SetState(ctx, redis, chatID, state.MainMenu)
+		msg.Text = i18n.T("menu_main", lang, cfg)
+		msg.ReplyMarkup = commands.GetLimitsMenu(lang, cfg)
 
 	default:
-		msg.Text = i18n.T("unknown_cmd", lang)
-		msg.ReplyMarkup = commands.GetLimitsMenu(lang)
+		msg.Text = i18n.T("unknown_cmd", lang, cfg)
+		msg.ReplyMarkup = commands.GetLimitsMenu(lang, cfg)
 	}
 }

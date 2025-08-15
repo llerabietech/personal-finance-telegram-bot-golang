@@ -1,9 +1,11 @@
 package state
 
 import (
-	"personal-finance/db"
+	"context"
 	"strconv"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 type UserState string
@@ -25,33 +27,33 @@ const (
 
 const StateTTL = 5 * time.Minute
 
-func SetState(chatID int64, state UserState) error {
+func SetState(ctx context.Context, redis *redis.Client, chatID int64, state UserState) error {
 	key := stateKey(chatID)
-	return db.RedisClient.Set(db.Ctx, key, string(state), StateTTL).Err()
+	return redis.Set(ctx, key, string(state), StateTTL).Err()
 }
 
-func GetState(chatID int64) (UserState, error) {
+func GetState(ctx context.Context, redis *redis.Client, chatID int64) (UserState, error) {
 	key := stateKey(chatID)
-	val, err := db.RedisClient.Get(db.Ctx, key).Result()
+	val, err := redis.Get(ctx, key).Result()
 	if err == nil {
 		return UserState(val), nil
 	}
 	return Idle, err
 }
 
-func SetTempData(chatID int64, data string) error {
+func SetTempData(ctx context.Context, redis *redis.Client, chatID int64, data string) error {
 	key := tempKey(chatID)
-	return db.RedisClient.Set(db.Ctx, key, data, StateTTL).Err()
+	return redis.Set(ctx, key, data, StateTTL).Err()
 }
 
-func GetTempData(chatID int64) (string, error) {
+func GetTempData(ctx context.Context, redis *redis.Client, chatID int64) (string, error) {
 	key := tempKey(chatID)
-	return db.RedisClient.Get(db.Ctx, key).Result()
+	return redis.Get(ctx, key).Result()
 }
 
-func Clear(chatID int64) {
-	db.RedisClient.Del(db.Ctx, stateKey(chatID))
-	db.RedisClient.Del(db.Ctx, tempKey(chatID))
+func Clear(ctx context.Context, redis *redis.Client, chatID int64) {
+	redis.Del(ctx, stateKey(chatID))
+	redis.Del(ctx, tempKey(chatID))
 }
 
 func stateKey(chatID int64) string {
@@ -62,10 +64,10 @@ func tempKey(chatID int64) string {
 	return "user:temp:" + strconv.FormatInt(chatID, 10)
 }
 
-func SetUserLanguage(chatID int64, lang string) error {
-    return db.RedisClient.Set(db.Ctx, "user:lang:"+strconv.FormatInt(chatID, 10), lang, 0).Err()
+func SetUserLanguage(ctx context.Context, redis *redis.Client, chatID int64, lang string) error {
+	return redis.Set(ctx, "user:lang:"+strconv.FormatInt(chatID, 10), lang, 0).Err()
 }
 
-func GetUserLanguage(chatID int64) (string, error) {
-    return db.RedisClient.Get(db.Ctx, "user:lang:"+strconv.FormatInt(chatID, 10)).Result()
+func GetUserLanguage(ctx context.Context, redis *redis.Client, chatID int64) (string, error) {
+	return redis.Get(ctx, "user:lang:"+strconv.FormatInt(chatID, 10)).Result()
 }

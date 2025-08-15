@@ -59,9 +59,10 @@ go mod tidy
 ### 3. Create .env file
 
 ```bash
-  TELEGRAM_TOKEN=your_telegram_bot_token_here
-  REDIS_PASSWORD=strongpassword123
+TELEGRAM_TOKEN=your_telegram_bot_token_here
+REDIS_PASSWORD=strongpassword123
 ```
+
 > Get a token from [@BotFather](https://t.me/BotFather) on Telegram.
 >
 > This file is auto-created by `make up` if missing.
@@ -91,6 +92,38 @@ make clean    # Stop and remove containers
 make env      # Show .env variables
 make help     # Show all commands
 ```
+
+## ⚙️ Configuration
+
+The bot is highly configurable through environment variables. Key settings include:
+
+### Limit Thresholds
+- `LIMIT_WARNING_THRESHOLD`: Percentage for spending warnings (default: 80%)
+- `LIMIT_OVERLOAD_THRESHOLD`: Percentage for limit exceeded alerts (default: 100%)
+- `BALANCE_WARNING_THRESHOLD`: Percentage for balance warnings (default: 10%)
+
+### Display & Formatting
+- `CURRENCY_SYMBOL`: Currency symbol (default: ₽)
+- `DATE_FORMAT`: Date format (default: 2006-01-02)
+- `MONTH_FORMAT`: Month format (default: 2006-01)
+- `TIME_FORMAT`: Time format (default: 15:04)
+
+### Status Emojis
+- `EMOJI_SUCCESS`: Success indicator (default: ✅)
+- `EMOJI_WARNING`: Warning indicator (default: 🟡)
+- `EMOJI_ERROR`: Error indicator (default: ❌)
+- `EMOJI_BALANCE_GOOD`: Good balance (default: 🟢)
+- `EMOJI_BALANCE_WARNING`: Balance warning (default: 🟡)
+- `EMOJI_BALANCE_BAD`: Poor balance (default: 🔴)
+
+### Confirmation Words
+- `CONFIRMATION_WORDS`: Comma-separated list of confirmation words (default: да,yes)
+
+### Language Configuration
+- `LANGUAGES`: Comma-separated list of supported languages (default: ru,en)
+- `DEFAULT_LANGUAGE`: Default language for fallback (default: en)
+
+See .example.env` for all available options.
 
 ### 📂 Project Structure
 

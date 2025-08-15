@@ -2,14 +2,16 @@ package db
 
 import (
 	"database/sql"
+	"personal-finance/internal/config"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sql.DB
 
-func InitDB() {
+func InitDB(cfg *config.Config) {
 	var err error
-	DB, err = sql.Open("sqlite3", "./finance.db")
+	DB, err = sql.Open("sqlite3", cfg.Database.Path)
 	if err != nil {
 		panic(err)
 	}
@@ -51,20 +53,20 @@ func createTables() {
 	}
 }
 
-func GetActiveUsersLastQuarter() ([]int64, error) {
-    rows, err := DB.Query("SELECT DISTINCT user_id FROM expenses WHERE date >= date('now', '-3 month')")
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+func GetActiveUsersLastQuarter(cfg *config.Config) ([]int64, error) {
+	rows, err := DB.Query("SELECT DISTINCT user_id FROM expenses WHERE date >= date('now', '-? month')", cfg.App.CleanupMonths)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var users []int64
-    for rows.Next() {
-        var chatID int64
-        if err := rows.Scan(&chatID); err != nil {
-            continue
-        }
-        users = append(users, chatID)
-    }
-    return users, nil
+	var users []int64
+	for rows.Next() {
+		var chatID int64
+		if err := rows.Scan(&chatID); err != nil {
+			continue
+		}
+		users = append(users, chatID)
+	}
+	return users, nil
 }
