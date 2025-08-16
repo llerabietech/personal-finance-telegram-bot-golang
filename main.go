@@ -5,6 +5,7 @@ import (
 	"personal-finance/bot"
 	"personal-finance/internal/app"
 	"personal-finance/internal/config"
+	"personal-finance/internal/scheduler"
 )
 
 func main() {
@@ -19,6 +20,6 @@ func main() {
 	}
 	defer application.Close()
 
-	bot.StartScheduler(application.Bot, application.DB, application.Redis, cfg)
+	scheduler.StartScheduler(application.Bot, application.DB, application.Redis, cfg)
 	bot.StartBot(application.Bot, application.DB, application.Redis, cfg)
 }

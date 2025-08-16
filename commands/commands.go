@@ -379,7 +379,7 @@ func ConfirmDelete(ctx context.Context, db *sql.DB, redis *redis.Client, chatID 
 	// Проверяем, является ли ответ одним из подтверждающих слов
 	isConfirmed := false
 	for _, word := range cfg.App.ConfirmationWords {
-		if strings.ToLower(answer) == strings.ToLower(word) {
+		if strings.EqualFold(answer, word){
 			isConfirmed = true
 			break
 		}

@@ -1,4 +1,4 @@
-package bot
+package scheduler
 
 import (
 	"context"
