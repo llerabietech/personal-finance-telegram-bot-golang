@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"personal-finance/i18n"
+	"personal-finance/internal/i18n"
 	"personal-finance/internal/config"
 	"personal-finance/state"
 	"personal-finance/utils"

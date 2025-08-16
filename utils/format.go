@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"personal-finance/i18n"
+	"personal-finance/internal/i18n"
 	"personal-finance/internal/config"
 	"strings"
 )

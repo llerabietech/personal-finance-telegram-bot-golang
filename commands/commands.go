@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
-	"personal-finance/i18n"
+	"personal-finance/internal/i18n"
 	"personal-finance/internal/config"
 	"personal-finance/state"
 	"personal-finance/utils"

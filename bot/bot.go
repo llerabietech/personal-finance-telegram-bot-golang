@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"personal-finance/commands"
-	"personal-finance/i18n"
+	"personal-finance/internal/i18n"
 	"personal-finance/internal/config"
 	"personal-finance/state"
 	"personal-finance/utils"
@@ -192,7 +192,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 			msg.Text = commands.AddIncome(ctx, db, chatID, text, lang, cfg)
 			msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 		} else {
-			msg.Text = "❌ " + i18n.T("invalid_format", lang, cfg)
+			msg.Text = i18n.T("invalid_format", lang, cfg)
 			msg.ReplyMarkup = commands.GetMainMenu(lang, cfg)
 		}
 	}
