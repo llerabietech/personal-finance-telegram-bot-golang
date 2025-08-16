@@ -32,11 +32,10 @@ type RedisConfig struct {
 }
 
 type AppConfig struct {
-	Timezone      string
-	CleanupMonths int
-	ReportHour    int
-	ReportMinute  int
-	// Новые параметры для замены хардкода
+	Timezone                string
+	CleanupMonths           int
+	ReportHour              int
+	ReportMinute            int
 	LimitWarningThreshold   float64      // Порог предупреждения о лимите (по умолчанию 80%)
 	LimitOverloadThreshold  float64      // Порог превышения лимита (по умолчанию 100%)
 	BalanceWarningThreshold float64      // Порог предупреждения о балансе (по умолчанию 10%)
