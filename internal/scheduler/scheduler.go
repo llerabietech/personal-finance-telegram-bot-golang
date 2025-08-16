@@ -3,8 +3,8 @@ package scheduler
 import (
 	"context"
 	"database/sql"
-	"personal-finance/commands"
 	"personal-finance/internal/config"
+	"personal-finance/internal/handler"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -21,7 +21,7 @@ func StartScheduler(bot *tgbotapi.BotAPI, db *sql.DB, redis *redis.Client, cfg *
 			now := time.Now()
 			if now.Day() == 1 && now.Hour() == cfg.App.ReportHour && now.Minute() < cfg.App.ReportMinute+10 {
 				ctx := context.Background()
-				commands.SendMonthlyReport(bot, ctx, db, redis, cfg)
+				handler.HandleMonthlyReport(bot, ctx, db, redis, cfg)
 			}
 
 			<-ticker.C
