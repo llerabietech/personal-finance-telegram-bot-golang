@@ -2,6 +2,8 @@
 # Usage: make [target]
 # Targets: up, build, down, logs, clean, env, help
 
+include .env
+
 # Tools
 COMPOSE := docker compose
 ENV_FILE := .env
@@ -30,6 +32,9 @@ help:
 	@echo "  make logs      View bot logs (last 100 lines)"
 	@echo "  make clean     Stop and remove containers and perform system cleanup"
 	@echo "  make env       Display environment variables from .env"
+	@echo "  make migrate-up Up all migrations"
+	@echo "  make migrate-down Down all migrations"
+	@echo "  make migrate-status Display migrations status"
 	@echo ""
 
 up: build
@@ -56,3 +61,12 @@ clean: down
 env:
 	@echo "Environment variables from .env:"
 	@cat .env 2>/dev/null || echo "Error: .env file not found"
+
+migrate-up:
+	migrate -path $(MIGRATIONS_PATH) -database "sqlite3:$(DB_PATH)" up
+
+migrate-down:
+	migrate -path $(MIGRATIONS_PATH) -database "sqlite3:$(DB_PATH)" down 1
+
+migrate-status:
+	migrate -path $(MIGRATIONS_PATH) -database "sqlite3:$(DB_PATH)" version
