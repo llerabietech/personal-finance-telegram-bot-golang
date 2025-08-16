@@ -2,7 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"log"
 	"personal-finance/internal/config"
+	"personal-finance/internal/db"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -16,40 +18,8 @@ func InitDB(cfg *config.Config) {
 		panic(err)
 	}
 
-	createTables()
-}
-
-func createTables() {
-	query := `
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY
-    );
-    CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        user_id INTEGER,
-        limit_sum REAL,
-        FOREIGN KEY(user_id) REFERENCES users(id)
-    );
-    CREATE TABLE IF NOT EXISTS expenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        category_id INTEGER,
-        amount REAL,
-        date TEXT,
-        FOREIGN KEY(category_id) REFERENCES categories(id)
-    );
-    CREATE TABLE IF NOT EXISTS incomes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        source TEXT,
-        amount REAL,
-        date TEXT
-    );`
-
-	_, err := DB.Exec(query)
-	if err != nil {
-		panic(err)
+	if err := db.MigrateDB(DB, cfg); err != nil {
+		log.Fatal("Migration failed: ", err)
 	}
 }
 
