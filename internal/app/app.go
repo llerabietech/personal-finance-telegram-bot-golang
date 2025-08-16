@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"personal-finance/internal/config"
+	"personal-finance/internal/i18n"
 
 	"github.com/go-redis/redis/v8"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -36,6 +37,11 @@ func New(cfg *config.Config) (*App, error) {
 	// Initialize Telegram bot
 	if err := app.initBot(); err != nil {
 		return nil, fmt.Errorf("failed to init bot: %w", err)
+	}
+
+	// Initialize translations
+	if err := i18n.LoadTranslations(); err != nil {
+		return nil, fmt.Errorf("failed to load translations: %w", err)
 	}
 
 	return app, nil
