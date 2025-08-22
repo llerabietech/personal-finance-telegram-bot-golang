@@ -17,59 +17,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func GetLanguageKeyboard(cfg *config.Config) tgbotapi.ReplyKeyboardMarkup {
-	return tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("🇷🇺 Русский"),
-			tgbotapi.NewKeyboardButton("🇬🇧 English"),
-		),
-	)
-}
 
-func GetMainMenu(lang string, cfg *config.Config) tgbotapi.ReplyKeyboardMarkup {
-	return tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("expenses", lang, cfg)),
-			tgbotapi.NewKeyboardButton(i18n.T("income", lang, cfg)),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("categories", lang, cfg)),
-			tgbotapi.NewKeyboardButton(i18n.T("limits", lang, cfg)),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("analytics", lang, cfg)),
-		),
-	)
-}
 
-func GetCategoriesMenu(lang string, cfg *config.Config) tgbotapi.ReplyKeyboardMarkup {
-	return tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("list_categories", lang, cfg)),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("add_category", lang, cfg)),
-			tgbotapi.NewKeyboardButton(i18n.T("delete_category", lang, cfg)),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("back", lang, cfg)),
-		),
-	)
-}
 
-func GetLimitsMenu(lang string, cfg *config.Config) tgbotapi.ReplyKeyboardMarkup {
-	return tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("limits_list", lang, cfg)),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("change_limit", lang, cfg)),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton(i18n.T("back", lang, cfg)),
-		),
-	)
-}
 
 func AddCategory(ctx context.Context, db *sql.DB, chatID int64, input string, lang string, cfg *config.Config) string {
 	parts := strings.Fields(input)

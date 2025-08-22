@@ -18,6 +18,13 @@ var CurrencySymbols = map[string]string{
 
 var Translations map[string]map[string]string
 
+// LanguageOptions maps language codes to their display labels with emoji.
+// Centralized here to avoid hardcoded labels in UI code.
+var LanguageOptions = map[string]string{
+	"ru": "🇷🇺 Русский",
+	"en": "🇬🇧 English",
+}
+
 func LoadTranslations() error {
 	Translations = make(map[string]map[string]string)
 
@@ -86,4 +93,24 @@ func Currency(lang string, cfg *config.Config) string {
 		return symbol
 	}
 	return cfg.App.CurrencySymbol // default
+}
+
+// LanguageButton returns the display label for the provided language code.
+// Falls back to the code itself if no label is configured.
+func LanguageButton(langCode string) string {
+	if label, ok := LanguageOptions[langCode]; ok {
+		return label
+	}
+	return langCode
+}
+
+// DetectLanguageFromButton maps the pressed button text to a language code,
+// considering only languages configured in the app.
+func DetectLanguageFromButton(text string, cfg *config.Config) (string, bool) {
+	for _, code := range cfg.App.Languages {
+		if text == LanguageButton(code) {
+			return code, true
+		}
+	}
+	return "", false
 }
