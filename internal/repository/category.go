@@ -51,3 +51,23 @@ func DeleteCategory(ctx context.Context, db *sql.DB, chatID int64, name string) 
 
 	return categoryID, limit, err
 }
+
+func GetCategory(ctx context.Context, db *sql.DB, chatID int64, categoryInput string) (int, string, error) {
+	var categoryID int
+	var categoryName string
+	err := db.QueryRowContext(ctx, `
+        SELECT id, name 
+        FROM categories 
+        WHERE user_id = ? AND LOWER(name) = ?`,
+		chatID, categoryInput).Scan(&categoryID, &categoryName)
+
+	return categoryID, categoryName, err
+}
+
+func GetLimitSum(ctx context.Context, db *sql.DB, chatID int64, categoryID int) (float64, error) {
+	var limitSum float64
+	err := db.QueryRowContext(ctx, "SELECT limit_sum FROM categories WHERE id = ? AND user_id = ?",
+		categoryID, chatID).Scan(&limitSum)
+
+	return limitSum, err
+}

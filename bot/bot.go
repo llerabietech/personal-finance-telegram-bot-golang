@@ -201,8 +201,8 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 		msg.ReplyMarkup = ui.GetLimitsMenu(lang, cfg)
 
 	default:
-		if commands.IsPotentialExpense(ctx, db, chatID, text) {
-			msg.Text = commands.AddExpense(bot, ctx, db, chatID, text, lang, cfg)
+		if service.IsPotentialExpense(ctx, db, chatID, text) {
+			msg.Text = service.AddExpense(bot, ctx, db, chatID, text, lang, cfg)
 			msg.ReplyMarkup = ui.GetMainMenu(lang, cfg)
 		} else if commands.IsPotentialIncome(ctx, db, chatID, text) {
 			msg.Text = commands.AddIncome(ctx, db, chatID, text, lang, cfg)

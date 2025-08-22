@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"math"
 	"personal-finance/internal/i18n"
 	"personal-finance/internal/config"
 	"personal-finance/state"
@@ -14,46 +13,10 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 
-func AddExpense(bot *tgbotapi.BotAPI, ctx context.Context, db *sql.DB, chatID int64, input string, lang string, cfg *config.Config) string {
-	parts := strings.Fields(input)
-	if len(parts) != 2 {
-		return i18n.T("invalid_format_expense", lang, cfg)
-	}
 
-	categoryInput := strings.ToLower(strings.TrimSpace(parts[0]))
-	amount, err := strconv.ParseFloat(parts[1], 64)
-	if err != nil {
-		return i18n.T("invalid_amount", lang, cfg)
-	}
-
-	var categoryID int
-	var categoryName string
-	err = db.QueryRowContext(ctx, `
-        SELECT id, name 
-        FROM categories 
-        WHERE user_id = ? AND LOWER(name) = ?`,
-		chatID, categoryInput).Scan(&categoryID, &categoryName)
-
-	if err == sql.ErrNoRows {
-		return i18n.Tf("category_not_found", lang, cfg, categoryInput)
-	} else if err != nil {
-		return i18n.T("error_found_category", lang, cfg)
-	}
-
-	_, err = db.ExecContext(ctx, "INSERT INTO expenses (user_id, category_id, amount, date) VALUES (?, ?, ?, ?)",
-		chatID, categoryID, amount, time.Now().Format(cfg.App.DateFormat))
-	if err != nil {
-		return i18n.T("error_save_expense", lang, cfg)
-	}
-
-	go CheckLimitAndNotify(bot, ctx, db, chatID, categoryID, categoryName, lang, cfg)
-
-	return utils.FormatAmount(i18n.Tf("add_expense", lang, cfg, utils.Title.String(categoryName), amount), lang, cfg)
-}
 
 func ListLimits(ctx context.Context, db *sql.DB, chatID int64, lang string, cfg *config.Config) string {
 	rows, err := db.QueryContext(ctx, "SELECT name, limit_sum FROM categories WHERE user_id = ?", chatID)
@@ -129,33 +92,7 @@ func GetAnalytics(ctx context.Context, db *sql.DB, chatID int64, lang string, cf
 	return utils.FormatAmount(i18n.Tf("analytics_title", lang, cfg, utils.GetMonthName(time.Now(), lang, cfg), totalIncome, totalExpenses, balanceEmoji, balance, details), lang, cfg)
 }
 
-func IsPotentialExpense(ctx context.Context, db *sql.DB, chatID int64, text string) bool {
-	parts := strings.Fields(text)
-	if len(parts) != 2 {
-		return false
-	}
 
-	categoryName := strings.ToLower(strings.TrimSpace(parts[0]))
-	amountStr := parts[1]
-
-	_, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil {
-		return false
-	}
-
-	var count int
-	err = db.QueryRowContext(ctx, `
-        SELECT COUNT(*) 
-        FROM categories 
-        WHERE user_id = ? AND LOWER(name) = ?`,
-		chatID, categoryName).Scan(&count)
-
-	if err != nil {
-		return false
-	}
-
-	return count > 0
-}
 
 func UpdateLimit(ctx context.Context, db *sql.DB, chatID int64, categoryName string, newLimit float64, lang string, cfg *config.Config) string {
 	name := strings.ToLower(strings.TrimSpace(categoryName))
@@ -186,45 +123,7 @@ func UpdateLimit(ctx context.Context, db *sql.DB, chatID int64, categoryName str
 	return utils.FormatAmount(i18n.Tf("updated_limit", lang, cfg, utils.Title.String(name), currentLimit, newLimit), lang, cfg)
 }
 
-func CheckLimitAndNotify(bot *tgbotapi.BotAPI, ctx context.Context, db *sql.DB, chatID int64, categoryID int, categoryName string, lang string, cfg *config.Config) {
-	month := time.Now().Format(cfg.App.MonthFormat)
 
-	var spent float64
-	err := db.QueryRowContext(ctx, `
-        SELECT COALESCE(SUM(amount), 0)
-        FROM expenses
-        WHERE user_id = ? AND category_id = ? AND date LIKE ?`,
-		chatID, categoryID, month+"%").Scan(&spent)
-	if err != nil {
-		return
-	}
-
-	var limitSum float64
-	err = db.QueryRowContext(ctx, "SELECT limit_sum FROM categories WHERE id = ? AND user_id = ?",
-		categoryID, chatID).Scan(&limitSum)
-	if err != nil || limitSum <= 0 {
-		return
-	}
-
-	percent := (spent / limitSum) * 100
-
-	var msgText string
-	sent := false
-
-	if percent >= cfg.App.LimitOverloadThreshold {
-		msgText = utils.FormatAmount(i18n.Tf("limit_is_overloaded", lang, cfg, utils.Title.String(categoryName), spent, limitSum), lang, cfg)
-		sent = true
-	} else if percent >= cfg.App.LimitWarningThreshold {
-		msgText = utils.FormatAmount(i18n.Tf("limit_warning", lang, cfg, math.Round(percent), utils.Title.String(categoryName), spent, limitSum), lang, cfg)
-		sent = true
-	}
-
-	if sent {
-		msg := tgbotapi.NewMessage(chatID, msgText)
-		msg.ParseMode = "Markdown"
-		bot.Send(msg)
-	}
-}
 
 func ConfirmDelete(ctx context.Context, db *sql.DB, redis *redis.Client, chatID int64, answer string, lang string, cfg *config.Config) string {
 	categoryIDStr, err := state.GetTempData(ctx, redis, chatID)
