@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"personal-finance/bot"
 	"personal-finance/internal/app"
+	"personal-finance/internal/bot"
 	"personal-finance/internal/config"
 	"personal-finance/internal/scheduler"
 )

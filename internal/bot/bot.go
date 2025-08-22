@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"personal-finance/commands"
 	"personal-finance/internal/config"
 	"personal-finance/internal/helper"
 	"personal-finance/internal/i18n"
@@ -205,8 +204,8 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 		if service.IsPotentialExpense(ctx, db, chatID, text) {
 			msg.Text = service.AddExpense(bot, ctx, db, chatID, text, lang, cfg)
 			msg.ReplyMarkup = ui.GetMainMenu(lang, cfg)
-		} else if commands.IsPotentialIncome(ctx, db, chatID, text) {
-			msg.Text = commands.AddIncome(ctx, db, chatID, text, lang, cfg)
+		} else if service.IsPotentialIncome(ctx, db, chatID, text) {
+			msg.Text = service.AddIncome(ctx, db, chatID, text, lang, cfg)
 			msg.ReplyMarkup = ui.GetMainMenu(lang, cfg)
 		} else {
 			msg.Text = i18n.T("invalid_format", lang, cfg)
