@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"personal-finance/commands"
 	"personal-finance/internal/config"
+	"personal-finance/internal/helper"
 	"personal-finance/internal/i18n"
 	"personal-finance/internal/service"
 	"personal-finance/internal/ui"
@@ -108,7 +109,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 		return
 
 	case state.ConfirmDeleteCategory:
-		result := commands.ConfirmDelete(ctx, db, redis, chatID, text, lang, cfg)
+		result := helper.ConfirmDelete(ctx, db, redis, chatID, text, lang, cfg)
 		msg.Text = result
 		bot.Send(msg)
 		return

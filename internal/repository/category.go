@@ -3,7 +3,39 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 )
+
+var (
+	ErrBeginTx        = errors.New("begin tx failed")
+	ErrDeleteExpenses = errors.New("delete expenses failed")
+	ErrDeleteCategory = errors.New("delete category failed")
+	ErrCommitTx       = errors.New("commit tx failed")
+)
+
+// deletes all expenses for a category and then the category itself within one transaction.
+func DeleteCategoryCascadeByID(ctx context.Context, db *sql.DB, categoryID int) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return ErrBeginTx
+	}
+
+	if _, err = tx.ExecContext(ctx, "DELETE FROM expenses WHERE category_id = ?", categoryID); err != nil {
+		tx.Rollback()
+		return ErrDeleteExpenses
+	}
+
+	if _, err = tx.ExecContext(ctx, "DELETE FROM categories WHERE id = ?", categoryID); err != nil {
+		tx.Rollback()
+		return ErrDeleteCategory
+	}
+
+	if err = tx.Commit(); err != nil {
+		return ErrCommitTx
+	}
+
+	return nil
+}
 
 func AddCategory(ctx context.Context, db *sql.DB, name string, chatID int64, limit float64) bool {
 	_, err := db.ExecContext(ctx, "INSERT INTO categories (name, user_id, limit_sum) VALUES (?, ?, ?)",
