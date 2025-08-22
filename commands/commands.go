@@ -18,27 +18,6 @@ import (
 )
 
 
-
-
-
-func AddCategory(ctx context.Context, db *sql.DB, chatID int64, input string, lang string, cfg *config.Config) string {
-	parts := strings.Fields(input)
-
-	name := strings.ToLower(parts[1])
-	limit, err := strconv.ParseFloat(parts[2], 64)
-	if err != nil || limit <= 0 {
-		return i18n.T("correct_digit", lang, cfg)
-	}
-
-	_, err = db.ExecContext(ctx, "INSERT INTO categories (name, user_id, limit_sum) VALUES (?, ?, ?)",
-		name, chatID, limit)
-	if err != nil {
-		return i18n.T("error_add_category", lang, cfg)
-	}
-
-	return utils.FormatAmount(i18n.Tf("category_created", lang, cfg, name, limit), lang, cfg)
-}
-
 func AddExpense(bot *tgbotapi.BotAPI, ctx context.Context, db *sql.DB, chatID int64, input string, lang string, cfg *config.Config) string {
 	parts := strings.Fields(input)
 	if len(parts) != 2 {
@@ -74,26 +53,6 @@ func AddExpense(bot *tgbotapi.BotAPI, ctx context.Context, db *sql.DB, chatID in
 	go CheckLimitAndNotify(bot, ctx, db, chatID, categoryID, categoryName, lang, cfg)
 
 	return utils.FormatAmount(i18n.Tf("add_expense", lang, cfg, utils.Title.String(categoryName), amount), lang, cfg)
-}
-
-func ListCategories(ctx context.Context, db *sql.DB, chatID int64, lang string, cfg *config.Config) string {
-	rows, err := db.QueryContext(ctx, "SELECT name FROM categories WHERE user_id = ?", chatID)
-	if err != nil {
-		return i18n.T("error_load_category", lang, cfg)
-	}
-	defer rows.Close()
-
-	var categories []string
-	for rows.Next() {
-		var name string
-		rows.Scan(&name)
-		categories = append(categories, name)
-	}
-
-	if len(categories) == 0 {
-		return i18n.T("error_empty_category", lang, cfg)
-	}
-	return i18n.T("categories2", lang, cfg) + strings.Join(categories, "\n• ")
 }
 
 func ListLimits(ctx context.Context, db *sql.DB, chatID int64, lang string, cfg *config.Config) string {
@@ -198,15 +157,6 @@ func IsPotentialExpense(ctx context.Context, db *sql.DB, chatID int64, text stri
 	return count > 0
 }
 
-func CreateCategory(ctx context.Context, db *sql.DB, chatID int64, name string, limit float64, lang string, cfg *config.Config) string {
-	_, err := db.ExecContext(ctx, "INSERT INTO categories (name, user_id, limit_sum) VALUES (?, ?, ?)",
-		name, chatID, limit)
-	if err != nil {
-		return i18n.T("error_create_category", lang, cfg)
-	}
-	return utils.FormatAmount(i18n.Tf("category_created", lang, cfg, utils.Title.String(name), limit), lang, cfg)
-}
-
 func UpdateLimit(ctx context.Context, db *sql.DB, chatID int64, categoryName string, newLimit float64, lang string, cfg *config.Config) string {
 	name := strings.ToLower(strings.TrimSpace(categoryName))
 	if name == "" {
@@ -234,28 +184,6 @@ func UpdateLimit(ctx context.Context, db *sql.DB, chatID int64, categoryName str
 	}
 
 	return utils.FormatAmount(i18n.Tf("updated_limit", lang, cfg, utils.Title.String(name), currentLimit, newLimit), lang, cfg)
-}
-
-func HandleNewCategoryName(ctx context.Context, db *sql.DB, redis *redis.Client, chatID int64, text string, lang string, cfg *config.Config) string {
-	name := strings.ToLower(strings.TrimSpace(text))
-	if name == "" {
-		return i18n.T("empty_name", lang, cfg)
-	}
-
-	var count int
-	err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM categories WHERE user_id = ? AND LOWER(name) = ?", chatID, name).Scan(&count)
-	if err != nil {
-		return err.Error()
-	}
-	if count > 0 {
-		state.Clear(ctx, redis, chatID)
-		return i18n.T("error_category_already_exist", lang, cfg)
-	}
-
-	state.SetTempData(ctx, redis, chatID, name)
-	state.SetState(ctx, redis, chatID, state.AwaitingCategoryLimit)
-
-	return i18n.Tf("enter_limit2", lang, cfg, utils.Title.String(name))
 }
 
 func CheckLimitAndNotify(bot *tgbotapi.BotAPI, ctx context.Context, db *sql.DB, chatID int64, categoryID int, categoryName string, lang string, cfg *config.Config) {
@@ -296,27 +224,6 @@ func CheckLimitAndNotify(bot *tgbotapi.BotAPI, ctx context.Context, db *sql.DB, 
 		msg.ParseMode = "Markdown"
 		bot.Send(msg)
 	}
-}
-
-func HandleDeleteCategory(ctx context.Context, db *sql.DB, redis *redis.Client, chatID int64, categoryName string, lang string, cfg *config.Config) string {
-	name := strings.ToLower(strings.TrimSpace(categoryName))
-
-	var categoryID int
-	var limit float64
-	err := db.QueryRowContext(ctx, "SELECT id, limit_sum FROM categories WHERE user_id = ? AND LOWER(name) = ?",
-		chatID, name).Scan(&categoryID, &limit)
-
-	if err == sql.ErrNoRows {
-		return i18n.T("category_not_found2", lang, cfg)
-	} else if err != nil {
-		return i18n.T("error_found_category", lang, cfg)
-	}
-
-	state.SetTempData(ctx, redis, chatID, fmt.Sprintf("%d", categoryID))
-	state.SetState(ctx, redis, chatID, state.ConfirmDeleteCategory)
-
-	displayName := utils.Title.String(name)
-	return utils.FormatAmount(i18n.Tf("confirm_delete", lang, cfg, displayName, limit), lang, cfg)
 }
 
 func ConfirmDelete(ctx context.Context, db *sql.DB, redis *redis.Client, chatID int64, answer string, lang string, cfg *config.Config) string {

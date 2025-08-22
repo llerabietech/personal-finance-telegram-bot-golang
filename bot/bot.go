@@ -7,6 +7,7 @@ import (
 	"personal-finance/commands"
 	"personal-finance/internal/config"
 	"personal-finance/internal/i18n"
+	"personal-finance/internal/service"
 	"personal-finance/internal/ui"
 	"personal-finance/state"
 	"personal-finance/utils"
@@ -48,7 +49,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 	// check the input states
 	switch userState {
 	case state.AwaitingCategoryName:
-		result := commands.HandleNewCategoryName(ctx, db, redis, chatID, text, lang, cfg)
+		result := service.NewCategoryName(ctx, db, redis, chatID, text, lang, cfg)
 		msg.Text = result
 		bot.Send(msg)
 		return
@@ -61,7 +62,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 			return
 		}
 		categoryName, _ := state.GetTempData(ctx, redis, chatID)
-		msg.Text = commands.CreateCategory(ctx, db, chatID, categoryName, amount, lang, cfg)
+		msg.Text = service.CreateCategory(ctx, db, chatID, categoryName, amount, lang, cfg)
 		state.Clear(ctx, redis, chatID)
 		msg.ReplyMarkup = ui.GetMainMenu(lang, cfg)
 		bot.Send(msg)
@@ -101,7 +102,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 		return
 
 	case state.AwaitingCategoryToDelete:
-		result := commands.HandleDeleteCategory(ctx, db, redis, chatID, text, lang, cfg)
+		result := service.DeleteCategory(ctx, db, redis, chatID, text, lang, cfg)
 		msg.Text = result
 		bot.Send(msg)
 		return
@@ -218,7 +219,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 func handleCategoriesMenu(ctx context.Context, db *sql.DB, redis *redis.Client, chatID int64, text string, msg *tgbotapi.MessageConfig, lang string, cfg *config.Config) {
 	switch text {
 	case i18n.T("list_categories", lang, cfg):
-		msg.Text = commands.ListCategories(ctx, db, chatID, lang, cfg)
+		msg.Text = service.ListCategories(ctx, db, chatID, lang, cfg)
 		msg.ReplyMarkup = ui.GetCategoriesMenu(lang, cfg)
 
 	case i18n.T("add_category", lang, cfg):
