@@ -8,17 +8,17 @@ import (
 )
 
 type CategoryReport struct {
-	Name   string
-	Spent  float64
-	Limit  float64
+	Name  string
+	Spent float64
+	Limit float64
 }
 
 type ReportData struct {
-	TotalSpent   float64
-	TotalIncome  float64
-	Balance      float64
-	Categories   []CategoryReport
-	OverLimit    int
+	TotalSpent  float64
+	TotalIncome float64
+	Balance     float64
+	Categories  []CategoryReport
+	OverLimit   int
 }
 
 type ReportRepository struct {
@@ -110,4 +110,29 @@ func GetActiveUsersLastQuarter(ctx context.Context, db *sql.DB, cfg *config.Conf
 		users = append(users, chatID)
 	}
 	return users, nil
+}
+
+func GetAnalyticsData(ctx context.Context, db *sql.DB, chatID int64, month string) (*sql.Rows, float64, float64, error) {
+	var totalIncome float64
+	err := db.QueryRowContext(ctx, "SELECT COALESCE(SUM(amount), 0) FROM incomes WHERE user_id = ? AND date LIKE ?",
+		chatID, month+"%").Scan(&totalIncome)
+	if err != nil {
+		totalIncome = 0
+	}
+
+	var totalExpenses float64
+	err = db.QueryRowContext(ctx, "SELECT COALESCE(SUM(amount), 0) FROM expenses e JOIN categories c ON e.category_id = c.id WHERE e.user_id = ? AND e.date LIKE ?",
+		chatID, month+"%").Scan(&totalExpenses)
+	if err != nil {
+		totalExpenses = 0
+	}
+
+	rows, err := db.QueryContext(ctx, `
+        SELECT c.name, SUM(e.amount), c.limit_sum 
+        FROM expenses e
+        JOIN categories c ON e.category_id = c.id
+        WHERE e.user_id = ? AND e.date LIKE ?
+        GROUP BY c.name, c.limit_sum`, chatID, month+"%")
+
+	return rows, totalIncome, totalExpenses, err
 }

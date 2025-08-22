@@ -84,3 +84,40 @@ func GenerateReport(ctx context.Context, db *sql.DB, redis *redis.Client, chatID
 
 	return report, nil
 }
+
+func GetAnalytics(ctx context.Context, db *sql.DB, chatID int64, lang string, cfg *config.Config) string {
+	month := time.Now().Format(cfg.App.MonthFormat)
+
+	rows, totalIncome, totalExpenses, err := repository.GetAnalyticsData(ctx, db, chatID, month)
+	if err != nil {
+		return i18n.T("limits2", lang, cfg)
+	}
+	defer rows.Close()
+
+	var report []string
+	for rows.Next() {
+		var name string
+		var spent, limit float64
+		rows.Scan(&name, &spent, &limit)
+		status := cfg.App.StatusEmojis.Success
+		if spent > limit {
+			status = cfg.App.StatusEmojis.Error
+		}
+		report = append(report, fmt.Sprintf("• %s: %.2f %s / %.2f %s %s", name, spent, cfg.App.CurrencySymbol, limit, cfg.App.CurrencySymbol, status))
+	}
+
+	balance := totalIncome - totalExpenses
+	balanceEmoji := cfg.App.StatusEmojis.BalanceGood
+	if balance < 0 {
+		balanceEmoji = cfg.App.StatusEmojis.BalanceBad
+	} else if balance < totalIncome*(cfg.App.BalanceWarningThreshold/100) {
+		balanceEmoji = cfg.App.StatusEmojis.BalanceWarning
+	}
+
+	details := "—"
+	if len(report) > 0 {
+		details = strings.Join(report, "\n")
+	}
+
+	return utils.FormatAmount(i18n.Tf("analytics_title", lang, cfg, utils.GetMonthName(time.Now(), lang, cfg), totalIncome, totalExpenses, balanceEmoji, balance, details), lang, cfg)
+}

@@ -96,7 +96,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 			bot.Send(msg)
 			return
 		}
-		msg.Text = commands.UpdateLimit(ctx, db, chatID, categoryName, amount, lang, cfg)
+		msg.Text = service.UpdateLimit(ctx, db, chatID, categoryName, amount, lang, cfg)
 		state.Clear(ctx, redis, chatID)
 		bot.Send(msg)
 		return
@@ -179,7 +179,7 @@ func handleUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update, db *sql.DB, redi
 	// Basic commands
 	switch text {
 	case i18n.T("analytics", lang, cfg):
-		msg.Text = commands.GetAnalytics(ctx, db, chatID, lang, cfg)
+		msg.Text = service.GetAnalytics(ctx, db, chatID, lang, cfg)
 		msg.ReplyMarkup = ui.GetMainMenu(lang, cfg)
 
 	case i18n.T("income", lang, cfg):
@@ -246,7 +246,7 @@ func handleCategoriesMenu(ctx context.Context, db *sql.DB, redis *redis.Client, 
 func handleLimitsMenu(ctx context.Context, db *sql.DB, redis *redis.Client, chatID int64, text string, msg *tgbotapi.MessageConfig, lang string, cfg *config.Config) {
 	switch text {
 	case i18n.T("limits_list", lang, cfg):
-		msg.Text = commands.ListLimits(ctx, db, chatID, lang, cfg)
+		msg.Text = service.ListLimits(ctx, db, chatID, lang, cfg)
 		msg.ReplyMarkup = ui.GetLimitsMenu(lang, cfg)
 
 	case i18n.T("change_limit", lang, cfg):

@@ -71,3 +71,28 @@ func GetLimitSum(ctx context.Context, db *sql.DB, chatID int64, categoryID int) 
 
 	return limitSum, err
 }
+
+func GetLimits(ctx context.Context, db *sql.DB, chatID int64) (*sql.Rows, error) {
+	rows, err := db.QueryContext(ctx, "SELECT name, limit_sum FROM categories WHERE user_id = ?", chatID)
+
+	return rows, err
+}
+
+func GetCurrentLimit(ctx context.Context, db *sql.DB, chatID int64, name string) (int, float64, error) {
+	var categoryID int
+	var currentLimit float64
+
+	err := db.QueryRowContext(ctx, `
+        SELECT id, limit_sum 
+        FROM categories 
+        WHERE user_id = ? AND LOWER(name) = ?`,
+		chatID, name).Scan(&categoryID, &currentLimit)
+
+	return categoryID, currentLimit, err
+}
+
+func UpdateLimit(ctx context.Context, db *sql.DB, newLimit float64, categoryID int) error {
+	_, err := db.ExecContext(ctx, "UPDATE categories SET limit_sum = ? WHERE id = ?", newLimit, categoryID)
+
+	return err
+}
