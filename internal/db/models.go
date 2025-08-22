@@ -5,7 +5,7 @@ type User struct {
 }
 
 type UserSummary struct {
-    ChatID int64
+	ChatID int64
 }
 
 type Category struct {
@@ -20,13 +20,13 @@ type Expense struct {
 	UserID     int64
 	CategoryID int
 	Amount     float64
-	Date       string 
+	Date       string
 }
 
 type Income struct {
-    ID       int
-    UserID   int64
-    Source   string
-    Amount   float64
-    Date     string 
+	ID     int
+	UserID int64
+	Source string
+	Amount float64
+	Date   string
 }
