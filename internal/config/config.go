@@ -38,26 +38,26 @@ type AppConfig struct {
 	CleanupMonths           int
 	ReportHour              int
 	ReportMinute            int
-	LimitWarningThreshold   float64      // Порог предупреждения о лимите (по умолчанию 80%)
-	LimitOverloadThreshold  float64      // Порог превышения лимита (по умолчанию 100%)
-	BalanceWarningThreshold float64      // Порог предупреждения о балансе (по умолчанию 10%)
-	DateFormat              string       // Формат даты (по умолчанию "2006-01-02")
-	MonthFormat             string       // Формат месяца (по умолчанию "2006-01")
-	TimeFormat              string       // Формат времени (по умолчанию "15:04")
-	CurrencySymbol          string       // Символ валюты (по умолчанию "₽")
-	StatusEmojis            StatusEmojis // Эмодзи для статусов
-	ConfirmationWords       []string     // Слова для подтверждения (по умолчанию ["да", "yes"])
-	Languages               []string     // Поддерживаемые языки (по умолчанию ["ru", "en"])
-	DefaultLanguage         string       // Язык по умолчанию (по умолчанию "en")
+	LimitWarningThreshold   float64      // Warning threshold for spending limits (default: 80%)
+	LimitOverloadThreshold  float64      // Overload threshold for spending limits (default: 100%)
+	BalanceWarningThreshold float64      // Balance warning threshold (default: 10%)
+	DateFormat              string       // Date format (default: "2006-01-02")
+	MonthFormat             string       // Month format (default: "2006-01")
+	TimeFormat              string       // Time format (default: "15:04")
+	CurrencySymbol          string       // Currency symbol (default: "₽")
+	StatusEmojis            StatusEmojis // Status emojis
+	ConfirmationWords       []string     // Confirmation words (default: ["да", "yes"])
+	Languages               []string     // Supported languages (default: ["ru", "en"])
+	DefaultLanguage         string       // Default language (default: "en")
 }
 
 type StatusEmojis struct {
-	Success        string // Эмодзи успеха (по умолчанию "✅")
-	Warning        string // Эмодзи предупреждения (по умолчанию "🟡")
-	Error          string // Эмодзи ошибки (по умолчанию "❌")
-	BalanceGood    string // Эмодзи хорошего баланса (по умолчанию "🟢")
-	BalanceWarning string // Эмодзи предупреждения о балансе (по умолчанию "🟡")
-	BalanceBad     string // Эмодзи плохого баланса (по умолчанию "🔴")
+	Success        string // Success emoji (default: "✅")
+	Warning        string // Warning emoji (default: "🟡")
+	Error          string // Error emoji (default: "❌")
+	BalanceGood    string // Good balance emoji (default: "🟢")
+	BalanceWarning string // Balance warning emoji (default: "🟡")
+	BalanceBad     string // Bad balance emoji (default: "🔴")
 }
 
 type LoggingConfig struct {
@@ -85,11 +85,10 @@ func Load() (*Config, error) {
 			Format: getEnvOrDefault("LOG_FORMAT", "text"),
 		},
 		App: AppConfig{
-			Timezone:      getEnvOrDefault("TZ", "Europe/Moscow"),
-			CleanupMonths: getEnvIntOrDefault("CLEANUP_MONTHS", 3),
-			ReportHour:    getEnvIntOrDefault("REPORT_HOUR", 0),
-			ReportMinute:  getEnvIntOrDefault("REPORT_MINUTE", 0),
-			// Новые параметры с значениями по умолчанию
+			Timezone:                getEnvOrDefault("TZ", "Europe/Moscow"),
+			CleanupMonths:           getEnvIntOrDefault("CLEANUP_MONTHS", 3),
+			ReportHour:              getEnvIntOrDefault("REPORT_HOUR", 0),
+			ReportMinute:            getEnvIntOrDefault("REPORT_MINUTE", 0),
 			LimitWarningThreshold:   getEnvFloatOrDefault("LIMIT_WARNING_THRESHOLD", 80.0),
 			LimitOverloadThreshold:  getEnvFloatOrDefault("LIMIT_OVERLOAD_THRESHOLD", 100.0),
 			BalanceWarningThreshold: getEnvFloatOrDefault("BALANCE_WARNING_THRESHOLD", 10.0),
