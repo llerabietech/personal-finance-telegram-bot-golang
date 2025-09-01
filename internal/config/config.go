@@ -23,6 +23,7 @@ type TelegramConfig struct {
 
 type DatabaseConfig struct {
 	Path string
+	MigrationsPath string
 }
 
 type RedisConfig struct {
@@ -66,6 +67,7 @@ func Load() (*Config, error) {
 		},
 		Database: DatabaseConfig{
 			Path: getEnvOrDefault("DB_PATH", "./finance.db"),
+			MigrationsPath: getEnvOrDefault("MIGRATIONS_PATH", "migrations"),
 		},
 		Redis: RedisConfig{
 			Addr:     getEnvOrDefault("REDIS_ADDR", "redis:6379"),
@@ -109,9 +111,6 @@ func Load() (*Config, error) {
 
 func Get() *Config {
 	if globalConfig == nil {
-		// This case should ideally not happen if Load() is called before Get()
-		// but as a fallback, we can return a default or panic.
-		// For now, we'll return nil, indicating an error state.
 		return nil
 	}
 	return globalConfig

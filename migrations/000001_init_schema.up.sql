@@ -1,4 +1,3 @@
--- +goose Up
 CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY
     );
@@ -25,8 +24,4 @@ CREATE TABLE IF NOT EXISTS incomes (
         date TEXT
     );
 
--- +goose Down
-DROP TABLE users;
-DROP TABLE categories;
-DROP TABLE expenses;
-DROP TABLE incomes;
+

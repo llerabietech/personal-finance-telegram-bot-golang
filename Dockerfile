@@ -19,6 +19,9 @@ WORKDIR /root/
 
 COPY --from=builder /app/finance-bot .
 COPY --from=builder /app/finance.db ./finance.db
+COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/internal/i18n/locales ./internal/i18n/locales
+COPY --from=builder /app/internal/i18n/locales ./locales
 
 EXPOSE 8080
 

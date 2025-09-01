@@ -3,20 +3,24 @@ package db
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"personal-finance/internal/config"
 
 	"database/sql"
 
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func MigrateDB(db *sql.DB, cfg *config.Config) error {
-	migrationPath := "file://migrations"
+	sourceURL := cfg.Database.MigrationsPath
+	if !strings.HasPrefix(sourceURL, "file://") {
+		sourceURL = "file://" + sourceURL
+	}
 
-	m, err := migrate.New(migrationPath, fmt.Sprintf("sqlite3://%s", cfg.Database.Path))
+	m, err := migrate.New(sourceURL, fmt.Sprintf("sqlite3://%s", cfg.Database.Path))
 	if err != nil {
 		return fmt.Errorf("failed to create migrate instance: %w", err)
 	}
