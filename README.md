@@ -38,6 +38,7 @@ Perfect for budgeting, saving, and staying on top of your finances.
 - **Database**: SQLite (expenses, categories, incomes)
 - **Session Storage**: Redis (user states, language, temp data)
 - **Localization**: Custom i18n system with dynamic currency
+- **Logging**: Structured logging with logrus (JSON/text formats, configurable levels)
 - **Build & Deploy**: Docker, Docker Compose, Makefile
 - **Architecture**: Modular (commands, db, state, i18n)
 
@@ -123,34 +124,71 @@ The bot is highly configurable through environment variables. Key settings inclu
 - `LANGUAGES`: Comma-separated list of supported languages (default: ru,en)
 - `DEFAULT_LANGUAGE`: Default language for fallback (default: en)
 
-See .example.env` for all available options.
+### Logging Configuration
+- `LOG_LEVEL`: Log level (debug, info, warn, error, fatal, panic) (default: info)
+- `LOG_FORMAT`: Log format (text, json) (default: text)
+
+See .env` for all available options.
 
 ### 📂 Project Structure
 
 ```
 personal-finance-telegram-bot-golang/
-├── main.go
-├── bot/
-│   ├── bot.go
-│   └── scheduler.go
-├── db/
-│   ├── db.go         # SQLite
-│   └── redis.go      # Redis client
-│   ├── models.go      
-├── commands/
-│   ├── commands.go
-│   └── monthly_report.go
+├── main.go                    # Application entry point
+├── internal/                  # Internal packages
+│   ├── app/
+│   │   └── app.go            # Application initialization
+│   ├── bot/
+│   │   └── bot.go            # Telegram bot logic
+│   ├── config/
+│   │   └── config.go         # Environment configuration
+│   ├── db/
+│   │   ├── db.go             # SQLite & Redis initialization
+│   │   ├── migration.go      # Database migrations
+│   │   └── models.go         # Data models
+│   ├── handler/
+│   │   └── report.go         # Report generation handlers
+│   ├── helper/
+│   │   └── helper.go         # Helper functions
+│   ├── i18n/
+│   │   ├── i18n.go           # Internationalization
+│   │   ├── i18n_test.go      # i18n tests
+│   │   └── locales/          # Translation files
+│   │       ├── en.yaml       # English translations
+│   │       └── ru.yaml       # Russian translations
+│   ├── log/
+│   │   └── logger.go         # Logging configuration
+│   ├── repository/           # Data access layer
+│   │   ├── category.go       # Category repository
+│   │   ├── expense.go        # Expense repository
+│   │   ├── income.go         # Income repository
+│   │   ├── report.go         # Report repository
+│   │   ├── state.go          # State repository
+│   │   └── user.go           # User repository
+│   ├── scheduler/
+│   │   └── scheduler.go      # Task scheduling
+│   ├── service/              # Business logic layer
+│   │   ├── category_service.go
+│   │   ├── expense_service.go
+│   │   ├── income_service.go
+│   │   ├── limit_service.go
+│   │   └── report_service.go
+│   └── ui/
+│       └── keyboard.go       # Telegram keyboard UI
+├── migrations/               # Database schema migrations
+│   ├── 000001_init_schema.up.sql
+│   └── 000001_init_schema.down.sql
 ├── state/
-│   └── state.go      # FSM & user language
-├── i18n/
-│   └── i18n.go       # Translations & currency
-├── utils/
-│   └── format.go       
-│   └── text.go       # Title case with golang.org/x/text
-|   └── month.go      # Localized month names
-├── Dockerfile        
-├── docker-compose.yml 
-├── Makefile          # Dev commands
-├── .env              # Auto-created
-└── README.md
+│   └── state.go             # User state management
+├── utils/                   # Utility functions
+│   ├── format.go            # Data formatting
+│   ├── month.go             # Month handling
+│   └── text.go              # Text processing
+├── Dockerfile               # Container build config
+├── docker-compose.yml       # Multi-service orchestration
+├── Makefile                 # Development commands
+├── go.mod                   # Go module definition
+├── go.sum                   # Go dependencies checksum
+├── LICENSE                  # Project license
+└── README.md                # Project documentation
 ```

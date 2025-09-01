@@ -14,6 +14,7 @@ type Config struct {
 	Database DatabaseConfig
 	Redis    RedisConfig
 	App      AppConfig
+	Logging  LoggingConfig
 }
 
 type TelegramConfig struct {
@@ -22,7 +23,7 @@ type TelegramConfig struct {
 }
 
 type DatabaseConfig struct {
-	Path string
+	Path           string
 	MigrationsPath string
 }
 
@@ -59,6 +60,11 @@ type StatusEmojis struct {
 	BalanceBad     string // Эмодзи плохого баланса (по умолчанию "🔴")
 }
 
+type LoggingConfig struct {
+	Level  string // Log level: debug, info, warn, error, fatal, panic
+	Format string // Log format: text, json
+}
+
 func Load() (*Config, error) {
 	cfg := &Config{
 		Telegram: TelegramConfig{
@@ -66,13 +72,17 @@ func Load() (*Config, error) {
 			Debug:    getEnvBoolOrDefault("TELEGRAM_DEBUG", false),
 		},
 		Database: DatabaseConfig{
-			Path: getEnvOrDefault("DB_PATH", "./finance.db"),
+			Path:           getEnvOrDefault("DB_PATH", "./finance.db"),
 			MigrationsPath: getEnvOrDefault("MIGRATIONS_PATH", "migrations"),
 		},
 		Redis: RedisConfig{
 			Addr:     getEnvOrDefault("REDIS_ADDR", "redis:6379"),
 			Password: getEnvOrDefault("REDIS_PASSWORD", ""),
 			DB:       getEnvIntOrDefault("REDIS_DB", 0),
+		},
+		Logging: LoggingConfig{
+			Level:  getEnvOrDefault("LOG_LEVEL", "info"),
+			Format: getEnvOrDefault("LOG_FORMAT", "text"),
 		},
 		App: AppConfig{
 			Timezone:      getEnvOrDefault("TZ", "Europe/Moscow"),

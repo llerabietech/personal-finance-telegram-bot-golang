@@ -17,6 +17,8 @@ services:
     environment:
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_FORMAT=${LOG_FORMAT:-text}
     depends_on:
       - redis
     restart: unless-stopped
